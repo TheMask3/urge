@@ -1,0 +1,9 @@
+[submodule "third_party/dawn"]
+	path = third_party/dawn
+	url = https://dawn.googlesource.com/dawn
+[submodule "third_party/SDL"]
+	path = third_party/SDL
+	url = https://github.com/Admenri/SDL
+[submodule "third_party/freetype"]
+	path = third_party/freetype
+	url = https://github.com/freetype/freetype

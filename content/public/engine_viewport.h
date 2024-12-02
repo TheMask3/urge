@@ -1,0 +1,72 @@
+// Copyright 2024 Admenri.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CONTENT_PUBLIC_ENGINE_VIEWPORT_H_
+#define CONTENT_PUBLIC_ENGINE_VIEWPORT_H_
+
+#include "base/memory/ref_counted.h"
+#include "content/content_config.h"
+#include "content/public/engine_color.h"
+#include "content/public/engine_rect.h"
+#include "content/public/engine_tone.h"
+
+namespace content {
+
+// IDL generator format:
+// Inhert: refcounted only.
+// Interface referrence: RPGVXAce.chm
+/*--urge()--*/
+class URGE_RUNTIME_API Viewport : public virtual base::RefCounted<Viewport> {
+ public:
+  virtual ~Viewport() = default;
+
+  /*--urge()--*/
+  static scoped_refptr<Viewport> New();
+
+  /*--urge()--*/
+  static scoped_refptr<Viewport> New(scoped_refptr<Rect> rect);
+
+  /*--urge()--*/
+  static scoped_refptr<Viewport> New(int32_t x,
+                                     int32_t y,
+                                     int32_t width,
+                                     int32_t height);
+
+  /*--urge()--*/
+  virtual void Dispose() = 0;
+
+  /*--urge()--*/
+  virtual bool IsDisposed() = 0;
+
+  /*--urge()--*/
+  virtual void Flash(scoped_refptr<Color> color, uint32_t duration) = 0;
+
+  /*--urge()--*/
+  virtual void Update() = 0;
+
+  /*--urge()--*/
+  URGE_EXPORT_ATTRIBUTE(Rect, scoped_refptr<Rect>);
+
+  /*--urge()--*/
+  URGE_EXPORT_ATTRIBUTE(Visible, bool);
+
+  /*--urge()--*/
+  URGE_EXPORT_ATTRIBUTE(Z, int32_t);
+
+  /*--urge()--*/
+  URGE_EXPORT_ATTRIBUTE(Ox, int32_t);
+
+  /*--urge()--*/
+  URGE_EXPORT_ATTRIBUTE(Oy, int32_t);
+
+  /*--urge()--*/
+  URGE_EXPORT_ATTRIBUTE(Color, scoped_refptr<Color>);
+
+  /*--urge()--*/
+  URGE_EXPORT_ATTRIBUTE(Tone, scoped_refptr<Tone>);
+};
+
+}  // namespace content
+
+#endif  //! CONTENT_PUBLIC_ENGINE_VIEWPORT_H_
