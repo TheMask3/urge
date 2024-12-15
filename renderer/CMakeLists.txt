@@ -14,8 +14,8 @@ set(ENGINE_RENDERER_SRC
   pipeline/builtin_wgsl.h
   pipeline/render_pipeline.cc
   pipeline/render_pipeline.h
-  resource/buffer_recycle.cc
-  resource/buffer_recycle.h
+  resource/render_buffer.cc
+  resource/render_buffer.h
   vertex/vertex_layout.cc
   vertex/vertex_layout.h
 )

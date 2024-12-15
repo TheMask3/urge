@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "renderer/resource/buffer_recycle.h"
-#include "buffer_recycle.h"
+#include "renderer/resource/render_buffer.h"
 
 #include <array>
 
@@ -50,7 +49,7 @@ wgpu::Buffer* QuadrangleIndexCache::Allocate(uint32_t quadrangle_size) {
     index_buffer_ = nullptr;
   }
 
-  // Upload
+  // Upload to GPU
   if (!index_buffer_) {
     // Allocate bigger buffer
     wgpu::BufferDescriptor buffer_desc;

@@ -11,7 +11,6 @@ namespace renderer {
 
 class RenderPipelineBase {
  public:
-  RenderPipelineBase(const wgpu::Device& device);
   ~RenderPipelineBase() = default;
 
   RenderPipelineBase(const RenderPipelineBase&) = delete;
@@ -20,6 +19,8 @@ class RenderPipelineBase {
   wgpu::RenderPipeline* GetPipeline() { return &pipeline_; }
 
  protected:
+  RenderPipelineBase(const wgpu::Device& device);
+
   void BuildPipeline(
       const std::string& shader_source,
       const std::string& vs_entry,
