@@ -18,6 +18,8 @@ set(ENGINE_CONTENT_SRC
   common/rect_impl.h
   common/tone_impl.cc
   common/tone_impl.h
+  exception/exception_state.cc
+  exception/exception_state.h
   public/engine_bitmap.h
   public/engine_color.h
   public/engine_font.h
@@ -45,6 +47,7 @@ target_link_libraries(engine_content PUBLIC
   engine_base
   engine_ui
   engine_renderer
+  components_filesystem
   sdl_image_loader
   sdl_ttf_render
 )

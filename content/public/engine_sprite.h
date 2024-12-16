@@ -7,6 +7,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
+#include "content/exception/exception_state.h"
 #include "content/public/engine_bitmap.h"
 #include "content/public/engine_viewport.h"
 
@@ -21,25 +22,28 @@ class URGE_RUNTIME_API Sprite : public virtual base::RefCounted<Sprite> {
   virtual ~Sprite() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Sprite> New(scoped_refptr<Viewport> viewport);
+  static scoped_refptr<Sprite> New(scoped_refptr<Viewport> viewport,
+                                   ExceptionState& exception_state);
 
   /*--urge()--*/
-  virtual void Dispose() = 0;
+  virtual void Dispose(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual bool IsDisposed() = 0;
+  virtual bool IsDisposed(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Flash(scoped_refptr<Color> color, uint32_t duration) = 0;
+  virtual void Flash(scoped_refptr<Color> color,
+                     uint32_t duration,
+                     ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Update() = 0;
+  virtual void Update(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual uint32_t Width() = 0;
+  virtual uint32_t Width(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual uint32_t Height() = 0;
+  virtual uint32_t Height(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
   URGE_EXPORT_ATTRIBUTE(Bitmap, scoped_refptr<Bitmap>);

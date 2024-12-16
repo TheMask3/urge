@@ -7,6 +7,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
+#include "content/exception/exception_state.h"
 #include "content/public/engine_bitmap.h"
 
 namespace content {
@@ -20,42 +21,47 @@ class URGE_RUNTIME_API Graphics : public virtual base::RefCounted<Graphics> {
   virtual ~Graphics() = default;
 
   /*--urge()--*/
-  virtual void Update() = 0;
+  virtual void Update(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Wait(uint32_t duration) = 0;
+  virtual void Wait(uint32_t duration, ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void FadeOut(uint32_t duration) = 0;
+  virtual void FadeOut(uint32_t duration, ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void FadeIn(uint32_t duration) = 0;
+  virtual void FadeIn(uint32_t duration, ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Freeze() = 0;
+  virtual void Freeze(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
   virtual void Transition(uint32_t duration,
                           const std::string& filename,
-                          uint32_t vague) = 0;
+                          uint32_t vague,
+                          ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual scoped_refptr<Bitmap> SnapToBitmap() = 0;
+  virtual scoped_refptr<Bitmap> SnapToBitmap(
+      ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void FrameReset() = 0;
+  virtual void FrameReset(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual uint32_t Width() = 0;
+  virtual uint32_t Width(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual uint32_t Height() = 0;
+  virtual uint32_t Height(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void ResizeScreen(uint32_t width, uint32_t height) = 0;
+  virtual void ResizeScreen(uint32_t width,
+                            uint32_t height,
+                            ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void PlayMovie(const std::string& filename) = 0;
+  virtual void PlayMovie(const std::string& filename,
+                         ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
   URGE_EXPORT_ATTRIBUTE(FrameRate, uint32_t);

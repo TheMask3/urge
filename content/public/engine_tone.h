@@ -7,6 +7,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
+#include "content/exception/exception_state.h"
 
 namespace content {
 
@@ -19,19 +20,25 @@ class URGE_RUNTIME_API Tone : public virtual base::RefCounted<Tone> {
   virtual ~Tone() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Tone> New();
+  static scoped_refptr<Tone> New(ExceptionState& exception_state);
 
   /*--urge()--*/
   static scoped_refptr<Tone> New(float red,
                                  float green,
                                  float blue,
-                                 float gray);
+                                 float gray,
+                                 ExceptionState& exception_state);
 
   /*--urge()--*/
-  virtual void Set(float red, float green, float blue, float gray) = 0;
+  virtual void Set(float red,
+                   float green,
+                   float blue,
+                   float gray,
+                   ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Set(scoped_refptr<Tone> other) = 0;
+  virtual void Set(scoped_refptr<Tone> other,
+                   ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
   URGE_EXPORT_ATTRIBUTE(Red, float);

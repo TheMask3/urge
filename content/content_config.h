@@ -11,16 +11,16 @@
 #include <optional>
 
 #define URGE_RUNTIME_API
-#define URGE_EXPORT_ATTRIBUTE(name, type) \
-  virtual type Get_##name() = 0;          \
-  virtual void Put_##name(const type&) = 0
+#define URGE_EXPORT_ATTRIBUTE(name, type)       \
+  virtual type Get_##name(ExceptionState&) = 0; \
+  virtual void Put_##name(const type&, ExceptionState&) = 0
 #define URGE_EXPORT_STATIC_ATTRIBUTE(name, type) \
-  static type Get_##name();                      \
-  static void Put_##name(const type&)
+  static type Get_##name(ExceptionState&);       \
+  static void Put_##name(const type&, ExceptionState&)
 
 #define URGE_DECLARE_OVERRIDE_ATTRIBUTE(name, type) \
-  type Get_##name() override;                       \
-  void Put_##name(const type&) override
+  type Get_##name(ExceptionState&) override;        \
+  void Put_##name(const type&, ExceptionState&) override
 
 using ContentFatalInfo = std::optional<std::string_view>;
 

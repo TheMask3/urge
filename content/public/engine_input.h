@@ -7,6 +7,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
+#include "content/exception/exception_state.h"
 
 namespace content {
 
@@ -19,22 +20,25 @@ class URGE_RUNTIME_API Input : public virtual base::RefCounted<Input> {
   virtual ~Input() = default;
 
   /*--urge()--*/
-  virtual void Update() = 0;
+  virtual void Update(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual bool IsPressed(const std::string& sym) = 0;
+  virtual bool IsPressed(const std::string& sym,
+                         ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual bool IsTriggered(const std::string& sym) = 0;
+  virtual bool IsTriggered(const std::string& sym,
+                           ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual bool IsRepeated(const std::string& sym) = 0;
+  virtual bool IsRepeated(const std::string& sym,
+                          ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual int32_t Dir4() = 0;
+  virtual int32_t Dir4(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual int32_t Dir8() = 0;
+  virtual int32_t Dir8(ExceptionState& exception_state) = 0;
 };
 
 }  // namespace content

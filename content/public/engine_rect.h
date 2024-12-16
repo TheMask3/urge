@@ -7,6 +7,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
+#include "content/exception/exception_state.h"
 
 namespace content {
 
@@ -19,22 +20,28 @@ class URGE_RUNTIME_API Rect : public virtual base::RefCounted<Rect> {
   virtual ~Rect() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Rect> New();
+  static scoped_refptr<Rect> New(ExceptionState& exception_state);
 
   /*--urge()--*/
   static scoped_refptr<Rect> New(int32_t x,
                                  int32_t y,
                                  int32_t width,
-                                 int32_t height);
+                                 int32_t height,
+                                 ExceptionState& exception_state);
 
   /*--urge()--*/
-  virtual void Set(int32_t x, int32_t y, int32_t width, int32_t height) = 0;
+  virtual void Set(int32_t x,
+                   int32_t y,
+                   int32_t width,
+                   int32_t height,
+                   ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Set(scoped_refptr<Rect> other) = 0;
+  virtual void Set(scoped_refptr<Rect> other,
+                   ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Empty() = 0;
+  virtual void Empty(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
   URGE_EXPORT_ATTRIBUTE(X, int32_t);

@@ -7,6 +7,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
+#include "content/exception/exception_state.h"
 #include "content/public/engine_bitmap.h"
 #include "content/public/engine_viewport.h"
 
@@ -21,13 +22,14 @@ class URGE_RUNTIME_API Plane : public virtual base::RefCounted<Plane> {
   virtual ~Plane() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Plane> New(scoped_refptr<Viewport> viewport);
+  static scoped_refptr<Plane> New(scoped_refptr<Viewport> viewport,
+                                  ExceptionState& exception_state);
 
   /*--urge()--*/
-  virtual void Dispose() = 0;
+  virtual void Dispose(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual bool IsDisposed() = 0;
+  virtual bool IsDisposed(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
   URGE_EXPORT_ATTRIBUTE(Bitmap, scoped_refptr<Bitmap>);

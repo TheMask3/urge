@@ -38,6 +38,7 @@ set(ENGINE_BASE_SRC
   memory/ref_counted.cc
   memory/ref_counted.h
   memory/scoped_refptr.h
+  memory/stack_allocated.h
   memory/weak_ptr.cc
   memory/weak_ptr.h
   thread/thread_checker.cc

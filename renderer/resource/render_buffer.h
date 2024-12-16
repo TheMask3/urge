@@ -7,6 +7,7 @@
 
 #include "renderer/device/render_device.h"
 #include "renderer/renderer_config.h"
+#include "renderer/vertex/vertex_layout.h"
 
 namespace renderer {
 
@@ -41,6 +42,7 @@ class VertexBufferController {
   VertexBufferController(const VertexBufferController&) = delete;
   VertexBufferController& operator=(const VertexBufferController&) = delete;
 
+  // Make new buffer instance
   static std::unique_ptr<VertexBufferController> Make(
       RenderDevice* device,
       uint64_t initial_size = 0);
@@ -69,20 +71,17 @@ template <typename VertexType>
 inline std::unique_ptr<VertexBufferController<VertexType>>
 VertexBufferController<VertexType>::Make(RenderDevice* device,
                                          uint64_t initial_size) {
-  wgpu::Buffer vertex_buffer_instance;
-  if (device && initial_size) {
+  wgpu::Buffer result_buffer;
+  if (initial_size) {
     wgpu::BufferDescriptor buffer_desc;
-    buffer_desc.size = initial_size * sizeof(VertexType);
     buffer_desc.usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst;
-    vertex_buffer_instance = device->GetDevice()->CreateBuffer(&buffer_desc);
-
-    if (!vertex_buffer_instance)
-      return nullptr;
+    buffer_desc.size = initial_size * sizeof(VertexType);
+    result_buffer = device->GetDevice()->CreateBuffer(&buffer_desc);
   }
 
-  return std::unique_ptr<VertexBufferController>(
+  return std::unique_ptr<VertexBufferController<VertexType>>(
       new VertexBufferController<VertexType>(*device->GetDevice(),
-                                             vertex_buffer_instance));
+                                             result_buffer));
 }
 
 template <typename VertexType>
@@ -94,13 +93,13 @@ inline void VertexBufferController<VertexType>::QueueWrite(
   if (!vertex_buffer_ ||
       vertex_buffer_.GetSize() < sizeof(VertexType) * (offset + size)) {
     wgpu::BufferDescriptor buffer_desc;
-    buffer_desc.size = initial_size * sizeof(VertexType);
     buffer_desc.usage = wgpu::BufferUsage::Vertex | wgpu::BufferUsage::CopyDst;
-    vertex_buffer_ = device_.CreateErrorBuffer(&buffer_desc);
+    buffer_desc.size = size * sizeof(VertexType);
+    vertex_buffer_ = device_.CreateBuffer(&buffer_desc);
   }
 
   encoder.WriteBuffer(vertex_buffer_, offset * sizeof(VertexType),
-                      reinterpret_cast<uint8_t*>(data),
+                      reinterpret_cast<const uint8_t*>(data),
                       size * sizeof(VertexType));
 }
 

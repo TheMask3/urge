@@ -9,6 +9,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
+#include "content/exception/exception_state.h"
 #include "content/public/engine_color.h"
 
 namespace content {
@@ -22,10 +23,13 @@ class URGE_RUNTIME_API Font : public virtual base::RefCounted<Font> {
   virtual ~Font() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Font> New(const std::string& name, uint32_t size);
+  static scoped_refptr<Font> New(const std::string& name,
+                                 uint32_t size,
+                                 ExceptionState& exception_state);
 
   /*--urge()--*/
-  static bool IsExisted(const std::string& name);
+  static bool IsExisted(const std::string& name,
+                        ExceptionState& exception_state);
 
   /*--urge()--*/
   URGE_EXPORT_STATIC_ATTRIBUTE(DefaultName, std::vector<std::string>);

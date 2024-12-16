@@ -81,6 +81,7 @@ add_subdirectory(third_party/dawn)
 # * source
 #-------------------------------------------------------------------------
 
+add_subdirectory(components/filesystem)
 add_subdirectory(base)
 add_subdirectory(ui)
 add_subdirectory(renderer)

@@ -11,6 +11,8 @@
 #include "SDL3/SDL_surface.h"
 #include "SDL3_ttf/SDL_ttf.h"
 
+#include "components/filesystem/io.h"
+#include "content/common/color_impl.h"
 #include "content/content_config.h"
 #include "content/public/engine_font.h"
 
@@ -18,8 +20,7 @@ namespace content {
 
 class ScopedFontData {
  public:
-  ScopedFontData(const std::string& default_font_name,
-                 filesystem::Filesystem* io);
+  ScopedFontData(const std::string& default_font_name, filesystem::IO* io);
   ~ScopedFontData();
 
   ScopedFontData(const ScopedFontData&) = delete;
@@ -59,7 +60,7 @@ class ScopedFontData {
 
   std::string font_default_name_;
   std::map<std::pair<std::string, int>, TTF_Font*> font_cache_;
-  std::map<std::string, std::pair<int64_t, void*>> mem_fonts_;
+  std::map<std::string, std::pair<int64_t, void*>> cache_data_;
 };
 
 class FontImpl : public Font {

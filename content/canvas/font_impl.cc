@@ -6,11 +6,11 @@
 
 #include <map>
 
-#include "content/common/color_impl.h"
-
 namespace content {
 
-const int kOutlineSize = 1;
+constexpr int kOutlineSize = 1;
+
+constexpr float kFontRealScale = 0.9f;
 
 namespace {
 
@@ -19,14 +19,12 @@ void RenderShadowSurface(SDL_Surface*& in, const SDL_Color& color) {
 }
 
 std::pair<int64_t, void*> ReadFontToMemory(SDL_IOStream* io) {
-  int64_t fsize = SDL_GetIOSize(io);
-  void* mem = SDL_malloc(fsize);
-  if (mem) {
-    SDL_ReadIO(io, mem, fsize);
-    SDL_CloseIO(io);
-  }
+  int64_t font_size = SDL_GetIOSize(io);
+  void* font_ptr = SDL_malloc(font_size);
+  if (font_ptr)
+    SDL_ReadIO(io, font_ptr, font_size);
 
-  return std::make_pair(fsize, mem);
+  return std::make_pair(font_size, font_ptr);
 }
 
 TTF_Font* ReadFontFromMemory(
@@ -36,7 +34,7 @@ TTF_Font* ReadFontFromMemory(
   auto it = mem_fonts.find(path);
   if (it != mem_fonts.end()) {
     SDL_IOStream* io = SDL_IOFromConstMem(it->second.second, it->second.first);
-    return TTF_OpenFontIO(io, true, size * 0.9f);
+    return TTF_OpenFontIO(io, true, size * kFontRealScale);
   }
 
   return nullptr;
@@ -45,9 +43,10 @@ TTF_Font* ReadFontFromMemory(
 }  // namespace
 
 ScopedFontData::ScopedFontData(const std::string& default_font_name,
-                               filesystem::Filesystem* io)
+                               filesystem::IO* io)
     : default_color_(Color::New(255.0, 255.0, 255.0, 255.0)),
       default_out_color_(Color::New(0, 0, 0, 255.0)) {
+  // Get font load dir and default font
   std::string filename(default_font_name);
   std::string dir("."), file;
 
@@ -60,26 +59,25 @@ ScopedFontData::ScopedFontData(const std::string& default_font_name,
 
   dir.push_back('/');
   font_default_name_ = file;
-  LOG(INFO) << "[Font] Search Path: " << dir;
-  LOG(INFO) << "[Font] Default Font: " << file;
   default_name_.push_back(file);
 
-  auto font_files = io->EnumDir(dir);
-  for (auto& file_iter : font_files) {
-    std::string filepath = dir + file_iter;
+  LOG(INFO) << "[Font] Search Path: " << dir;
+  LOG(INFO) << "[Font] Default Font: " << file;
 
-    SDL_IOStream* font_ops = nullptr;
-    try {
-      font_ops = io->OpenReadRaw(filepath);
-    } catch (...) {
-      // Ignore font load error
-      font_ops = nullptr;
-    }
+  // Load all font to memory as cache
+  std::vector<std::string> font_files;
+  io->EnumFiles(dir, font_files);
+  for (auto& it : font_files) {
+    std::string filepath = dir + it;
+    SDL_IOStream* font_stream = io->OpenFile(filepath, true);
+    if (font_stream) {
+      // Cached in memory
+      cache_data_.emplace(it, ReadFontToMemory(font_stream));
 
-    // Cached in memory
-    if (font_ops) {
-      LOG(INFO) << "[Font] Loaded Font: " << file_iter;
-      mem_fonts_.emplace(file_iter, ReadFontToMemory(font_ops));
+      // Close i/o stream
+      SDL_CloseIO(font_stream);
+
+      LOG(INFO) << "[Font] Loaded Font: " << it;
     }
   }
 }
@@ -88,13 +86,13 @@ ScopedFontData::~ScopedFontData() {
   for (auto& it : font_cache_)
     TTF_CloseFont(it.second);
 
-  for (auto& it : mem_fonts_)
+  for (auto& it : cache_data_)
     SDL_free(it.second.second);
 }
 
 void* ScopedFontData::GetUIDefaultFont(int64_t* font_size) {
-  auto it = mem_fonts_.find(font_default_name_);
-  if (it != mem_fonts_.end()) {
+  auto it = cache_data_.find(font_default_name_);
+  if (it != cache_data_.end()) {
     *font_size = it->second.first;
     return it->second.second;
   }
@@ -103,11 +101,8 @@ void* ScopedFontData::GetUIDefaultFont(int64_t* font_size) {
 }
 
 bool ScopedFontData::Existed(const std::string& name) {
-  auto it = mem_fonts_.find(name);
-  if (it != mem_fonts_.end())
-    return true;
-
-  return false;
+  auto it = cache_data_.find(name);
+  return it != cache_data_.end();
 }
 
 void ScopedFontData::SetDefaultName(const std::vector<std::string>& name) {
@@ -279,8 +274,8 @@ SDL_Surface* FontImpl::RenderText(const std::string& text,
   font_color.a = 255;
   outline_color.a = 255;
 
-  SDL_Surface* raw_surf =
-      TTF_RenderUTF8_Blended(font, src_text.c_str(), font_color);
+  SDL_Surface* raw_surf = TTF_RenderText_Blended(font, src_text.c_str(),
+                                                 src_text.size(), font_color);
   if (!raw_surf)
     return nullptr;
   ensure_format(raw_surf);
@@ -291,7 +286,8 @@ SDL_Surface* FontImpl::RenderText(const std::string& text,
   if (outline_) {
     SDL_Surface* outline = nullptr;
     TTF_SetFontOutline(font, kOutlineSize);
-    outline = TTF_RenderUTF8_Blended(font, src_text.c_str(), outline_color);
+    outline = TTF_RenderText_Blended(font, src_text.c_str(), src_text.size(),
+                                     outline_color);
     ensure_format(outline);
     SDL_Rect outRect = {kOutlineSize, kOutlineSize, raw_surf->w, raw_surf->h};
     SDL_SetSurfaceBlendMode(raw_surf, SDL_BLENDMODE_BLEND);
@@ -334,8 +330,7 @@ void FontImpl::LoadFontInternal() {
   std::string font_names;
   for (auto& it : name_)
     font_names = font_names + it + " ";
-  throw base::Exception(base::Exception::ContentError,
-                        "Failed to load Font: %s", font_names.c_str());
+  LOG(INFO) << "Failed to load Font: " << font_names.c_str();
 }
 
 }  // namespace content

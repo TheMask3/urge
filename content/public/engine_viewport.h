@@ -7,6 +7,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
+#include "content/exception/exception_state.h"
 #include "content/public/engine_color.h"
 #include "content/public/engine_rect.h"
 #include "content/public/engine_tone.h"
@@ -22,28 +23,32 @@ class URGE_RUNTIME_API Viewport : public virtual base::RefCounted<Viewport> {
   virtual ~Viewport() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Viewport> New();
+  static scoped_refptr<Viewport> New(ExceptionState& exception_state);
 
   /*--urge()--*/
-  static scoped_refptr<Viewport> New(scoped_refptr<Rect> rect);
+  static scoped_refptr<Viewport> New(scoped_refptr<Rect> rect,
+                                     ExceptionState& exception_state);
 
   /*--urge()--*/
   static scoped_refptr<Viewport> New(int32_t x,
                                      int32_t y,
                                      int32_t width,
-                                     int32_t height);
+                                     int32_t height,
+                                     ExceptionState& exception_state);
 
   /*--urge()--*/
-  virtual void Dispose() = 0;
+  virtual void Dispose(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual bool IsDisposed() = 0;
+  virtual bool IsDisposed(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Flash(scoped_refptr<Color> color, uint32_t duration) = 0;
+  virtual void Flash(scoped_refptr<Color> color,
+                     uint32_t duration,
+                     ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
-  virtual void Update() = 0;
+  virtual void Update(ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
   URGE_EXPORT_ATTRIBUTE(Rect, scoped_refptr<Rect>);
