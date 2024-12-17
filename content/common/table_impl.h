@@ -1,0 +1,54 @@
+// Copyright 2024 Admenri.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+#ifndef CONTENT_COMMON_TABLE_IMPL_H_
+#define CONTENT_COMMON_TABLE_IMPL_H_
+
+#include <stdint.h>
+#include <vector>
+
+#include "content/public/engine_table.h"
+
+namespace content {
+
+class TableImpl : public Table {
+ public:
+  TableImpl(uint32_t xsize, uint32_t ysize = 1, uint32_t zsize = 1);
+  TableImpl(const TableImpl& other);
+  ~TableImpl() override = default;
+
+  bool FetchDirtyStatus();
+
+  void Resize(uint32_t xsize, ExceptionState& exception_state) override;
+  void Resize(uint32_t xsize,
+              uint32_t ysize,
+              ExceptionState& exception_state) override;
+  void Resize(uint32_t xsize,
+              uint32_t ysize,
+              uint32_t zsize,
+              ExceptionState& exception_state) override;
+  uint32_t Xsize(ExceptionState& exception_state) override;
+  uint32_t Ysize(ExceptionState& exception_state) override;
+  uint32_t Zsize(ExceptionState& exception_state) override;
+  int16_t Get(uint32_t x,
+              uint32_t y,
+              uint32_t z,
+              ExceptionState& exception_state) override;
+  void Put(uint32_t x,
+           uint32_t y,
+           uint32_t z,
+           int16_t value,
+           ExceptionState& exception_state) override;
+
+ private:
+  friend class Table;
+
+  bool dirty_;
+  uint32_t x_size_, y_size_, z_size_;
+  std::vector<int16_t> data_;
+};
+
+}  // namespace content
+
+#endif  //! CONTENT_COMMON_TABLE_IMPL_H_

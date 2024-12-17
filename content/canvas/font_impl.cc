@@ -42,10 +42,12 @@ TTF_Font* ReadFontFromMemory(
 
 }  // namespace
 
-ScopedFontData::ScopedFontData(const std::string& default_font_name,
-                               filesystem::IO* io)
-    : default_color_(Color::New(255.0, 255.0, 255.0, 255.0)),
-      default_out_color_(Color::New(0, 0, 0, 255.0)) {
+ScopedFontData::ScopedFontData(filesystem::IO* io,
+                               const std::string& default_font_name,
+                               ExceptionState& exception_state)
+    : default_color(
+          Color::New(255.0f, 255.0f, 255.0f, 255.0f, exception_state)),
+      default_out_color(Color::New(0, 0, 0, 255.0f, exception_state)) {
   // Get font load dir and default font
   std::string filename(default_font_name);
   std::string dir("."), file;
@@ -58,21 +60,21 @@ ScopedFontData::ScopedFontData(const std::string& default_font_name,
     file = filename;
 
   dir.push_back('/');
-  font_default_name_ = file;
-  default_name_.push_back(file);
+  default_name.push_back(file);
+  default_font = file;
 
   LOG(INFO) << "[Font] Search Path: " << dir;
   LOG(INFO) << "[Font] Default Font: " << file;
 
   // Load all font to memory as cache
   std::vector<std::string> font_files;
-  io->EnumFiles(dir, font_files);
+  io->EnumDirectory(dir, font_files);
   for (auto& it : font_files) {
     std::string filepath = dir + it;
     SDL_IOStream* font_stream = io->OpenFile(filepath, true);
     if (font_stream) {
       // Cached in memory
-      cache_data_.emplace(it, ReadFontToMemory(font_stream));
+      data_cache.emplace(it, ReadFontToMemory(font_stream));
 
       // Close i/o stream
       SDL_CloseIO(font_stream);
@@ -83,189 +85,188 @@ ScopedFontData::ScopedFontData(const std::string& default_font_name,
 }
 
 ScopedFontData::~ScopedFontData() {
-  for (auto& it : font_cache_)
+  for (auto& it : font_cache)
     TTF_CloseFont(it.second);
 
-  for (auto& it : cache_data_)
+  for (auto& it : data_cache)
     SDL_free(it.second.second);
 }
 
-void* ScopedFontData::GetUIDefaultFont(int64_t* font_size) {
-  auto it = cache_data_.find(font_default_name_);
-  if (it != cache_data_.end()) {
-    *font_size = it->second.first;
-    return it->second.second;
-  }
-
-  return nullptr;
+bool ScopedFontData::IsFontExisted(const std::string& name) {
+  return data_cache.find(name) != data_cache.end();
 }
 
-bool ScopedFontData::Existed(const std::string& name) {
-  auto it = cache_data_.find(name);
-  return it != cache_data_.end();
+scoped_refptr<Font> Font::New(ExecutionContext* execution_context,
+                              const std::string& name,
+                              uint32_t size,
+                              ExceptionState& exception_state) {
+  return new FontImpl();
 }
 
-void ScopedFontData::SetDefaultName(const std::vector<std::string>& name) {
-  default_name_ = name;
+bool Font::IsExisted(ExecutionContext* execution_context,
+                     const std::string& name,
+                     ExceptionState& exception_state) {
+  return false;
 }
 
-std::vector<std::string> ScopedFontData::GetDefaultName() {
-  return default_name_;
+URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font,
+                                   DefaultName,
+                                   std::vector<std::string>) {
+  return execution_context->GetFontContext()->default_name;
 }
 
-void ScopedFontData::SetDefaultSize(int size) {
-  default_size_ = size;
+URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font,
+                                    DefaultName,
+                                    std::vector<std::string>) {
+  execution_context->GetFontContext()->default_name = value;
 }
 
-int ScopedFontData::GetDefaultSize() {
-  return default_size_;
+URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font, DefaultSize, uint32_t) {
+  return execution_context->GetFontContext()->default_size;
 }
 
-void ScopedFontData::SetDefaultBold(bool bold) {
-  default_bold_ = bold;
+URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font, DefaultSize, uint32_t) {
+  execution_context->GetFontContext()->default_size = value;
 }
 
-bool ScopedFontData::GetDefaultBold() {
-  return default_bold_;
+URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font, DefaultBold, bool) {
+  return execution_context->GetFontContext()->default_bold;
 }
 
-void ScopedFontData::SetDefaultItalic(bool italic) {
-  default_italic_ = italic;
+URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font, DefaultBold, bool) {
+  execution_context->GetFontContext()->default_bold = value;
 }
 
-bool ScopedFontData::GetDefaultItalic() {
-  return default_italic_;
+URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font, DefaultItalic, bool) {
+  return execution_context->GetFontContext()->default_italic;
 }
 
-void ScopedFontData::SetDefaultShadow(bool shadow) {
-  default_shadow_ = shadow;
+URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font, DefaultItalic, bool) {
+  execution_context->GetFontContext()->default_italic;
 }
 
-bool ScopedFontData::GetDefaultShadow() {
-  return default_shadow_;
+URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font, DefaultShadow, bool) {
+  return execution_context->GetFontContext()->default_shadow;
 }
 
-void ScopedFontData::SetDefaultOutline(bool outline) {
-  default_outline_ = outline;
+URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font, DefaultShadow, bool) {
+  execution_context->GetFontContext()->default_shadow = value;
 }
 
-bool ScopedFontData::GetDefaultOutline() {
-  return default_outline_;
+URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font, DefaultOutline, bool) {
+  return execution_context->GetFontContext()->default_outline;
 }
 
-void ScopedFontData::SetDefaultColor(scoped_refptr<Color> color) {
-  default_color_->Set(color);
+URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font, DefaultOutline, bool) {
+  execution_context->GetFontContext()->default_outline = value;
 }
 
-scoped_refptr<Color> ScopedFontData::GetDefaultColor() {
-  return default_color_;
+URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font, DefaultColor, scoped_refptr<Color>) {
+  return execution_context->GetFontContext()->default_color;
 }
 
-void ScopedFontData::SetDefaultOutColor(scoped_refptr<Color> color) {
-  default_out_color_->Set(color);
+URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font, DefaultColor, scoped_refptr<Color>) {
+  execution_context->GetFontContext()->default_color = value;
 }
 
-scoped_refptr<Color> ScopedFontData::GetDefaultOutColor() {
-  return default_out_color_;
+URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font,
+                                   DefaultOutColor,
+                                   scoped_refptr<Color>) {
+  return execution_context->GetFontContext()->default_out_color;
 }
 
-std::vector<std::string> FontImpl::Get_Name() {
+URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font,
+                                    DefaultOutColor,
+                                    scoped_refptr<Color>) {
+  execution_context->GetFontContext()->default_out_color = value;
+}
+
+std::vector<std::string> FontImpl::Get_Name(ExceptionState& exception_state) {
   return name_;
 }
 
-void FontImpl::Put_Name(const std::vector<std::string>& value) {
+void FontImpl::Put_Name(const std::vector<std::string>& value,
+                        ExceptionState& exception_state) {
   name_ = value;
 }
 
-uint32_t FontImpl::Get_Size() {
+uint32_t FontImpl::Get_Size(ExceptionState& exception_state) {
   return size_;
 }
 
-void FontImpl::Put_Size(const uint32_t& value) {
+void FontImpl::Put_Size(const uint32_t& value,
+                        ExceptionState& exception_state) {
   size_ = value;
 }
 
-bool FontImpl::Get_Italic() {
+bool FontImpl::Get_Italic(ExceptionState& exception_state) {
   return italic_;
 }
 
-void FontImpl::Put_Italic(const bool& value) {
+void FontImpl::Put_Italic(const bool& value, ExceptionState& exception_state) {
   italic_ = value;
 }
 
-bool FontImpl::Get_Outline() {
+bool FontImpl::Get_Outline(ExceptionState& exception_state) {
   return outline_;
 }
 
-void FontImpl::Put_Outline(const bool& value) {
+void FontImpl::Put_Outline(const bool& value, ExceptionState& exception_state) {
   outline_ = value;
 }
 
-bool FontImpl::Get_Shadow() {
+bool FontImpl::Get_Shadow(ExceptionState& exception_state) {
   return shadow_;
 }
 
-void FontImpl::Put_Shadow(const bool& value) {
+void FontImpl::Put_Shadow(const bool& value, ExceptionState& exception_state) {
   shadow_ = value;
 }
 
-scoped_refptr<Color> FontImpl::Get_Color() {
+scoped_refptr<Color> FontImpl::Get_Color(ExceptionState& exception_state) {
   return color_;
 }
 
-void FontImpl::Put_Color(const scoped_refptr<Color>& value) {
+void FontImpl::Put_Color(const scoped_refptr<Color>& value,
+                         ExceptionState& exception_state) {
   color_ = value;
 }
 
-scoped_refptr<Color> FontImpl::Get_OutColor() {
+scoped_refptr<Color> FontImpl::Get_OutColor(ExceptionState& exception_state) {
   return out_color_;
 }
 
-void FontImpl::Put_OutColor(const scoped_refptr<Color>& value) {
+void FontImpl::Put_OutColor(const scoped_refptr<Color>& value,
+                            ExceptionState& exception_state) {
   out_color_ = value;
 }
 
-void FontImpl::EnsureLoadFont() {
+TTF_Font* FontImpl::GetCanonicalFont(ExceptionState& exception_state) {
   if (!font_)
-    LoadFontInternal();
-}
+    LoadFontInternal(exception_state);
 
-TTF_Font* FontImpl::AsSDLFont() {
-  EnsureLoadFont();
+  if (exception_state.HadException())
+    return nullptr;
 
   int font_style = TTF_STYLE_NORMAL;
   if (bold_)
     font_style |= TTF_STYLE_BOLD;
   if (italic_)
     font_style |= TTF_STYLE_ITALIC;
-
   TTF_SetFontStyle(font_, font_style);
 
   return font_;
 }
 
 SDL_Surface* FontImpl::RenderText(const std::string& text,
-                                  uint8_t* font_opacity) {
-  auto ensure_format = [](SDL_Surface*& surf) {
-    SDL_Surface* format_surf = nullptr;
-    if (surf->format != SDL_PIXELFORMAT_ABGR8888) {
-      format_surf = SDL_ConvertSurface(surf, SDL_PIXELFORMAT_ABGR8888);
-      SDL_DestroySurface(surf);
-      surf = format_surf;
-    }
-  };
-
-  std::string src_text(text);
-  if (src_text.empty() || src_text == " ")
-    return nullptr;
-
-  TTF_Font* font = AsSDLFont();
+                                  uint8_t* font_opacity,
+                                  ExceptionState& exception_state) {
+  TTF_Font* font = GetCanonicalFont(exception_state);
   if (!font)
     return nullptr;
 
-  ColorImpl* color_impl = static_cast<ColorImpl*>(color_.get());
-  ColorImpl* out_color_impl = static_cast<ColorImpl*>(out_color_.get());
-
+  auto color_impl = ColorImpl::From(color_);
+  auto out_color_impl = ColorImpl::From(out_color_);
   SDL_Color font_color = color_impl->AsSDLColor();
   SDL_Color outline_color = out_color_impl->AsSDLColor();
   if (font_opacity)
@@ -274,11 +275,12 @@ SDL_Surface* FontImpl::RenderText(const std::string& text,
   font_color.a = 255;
   outline_color.a = 255;
 
-  SDL_Surface* raw_surf = TTF_RenderText_Blended(font, src_text.c_str(),
-                                                 src_text.size(), font_color);
+  SDL_Surface* raw_surf =
+      TTF_RenderText_Blended(font, text.c_str(), text.size(), font_color);
   if (!raw_surf)
     return nullptr;
-  ensure_format(raw_surf);
+
+  EnsureFontSurfaceFormatInternal(raw_surf);
 
   if (shadow_)
     RenderShadowSurface(raw_surf, font_color);
@@ -286,9 +288,9 @@ SDL_Surface* FontImpl::RenderText(const std::string& text,
   if (outline_) {
     SDL_Surface* outline = nullptr;
     TTF_SetFontOutline(font, kOutlineSize);
-    outline = TTF_RenderText_Blended(font, src_text.c_str(), src_text.size(),
-                                     outline_color);
-    ensure_format(outline);
+    outline =
+        TTF_RenderText_Blended(font, text.c_str(), text.size(), outline_color);
+    EnsureFontSurfaceFormatInternal(outline);
     SDL_Rect outRect = {kOutlineSize, kOutlineSize, raw_surf->w, raw_surf->h};
     SDL_SetSurfaceBlendMode(raw_surf, SDL_BLENDMODE_BLEND);
     SDL_BlitSurface(raw_surf, NULL, outline, &outRect);
@@ -300,11 +302,11 @@ SDL_Surface* FontImpl::RenderText(const std::string& text,
   return raw_surf;
 }
 
-void FontImpl::LoadFontInternal() {
+void FontImpl::LoadFontInternal(ExceptionState& exception_state) {
   std::vector<std::string> load_names(name_);
-  load_names.push_back(parent_->font_default_name_);
+  load_names.push_back(parent_->default_font);
 
-  auto& font_cache = parent_->font_cache_;
+  auto& font_cache = parent_->font_cache;
   if (size_ >= 6 && size_ <= 96) {
     for (const auto& font_name : load_names) {
       // Find existed font object
@@ -316,7 +318,7 @@ void FontImpl::LoadFontInternal() {
 
       // Load new font object
       TTF_Font* font_obj =
-          ReadFontFromMemory(parent_->mem_fonts_, font_name, size_);
+          ReadFontFromMemory(parent_->data_cache, font_name, size_);
       if (font_obj) {
         // Storage new font obj
         font_ = font_obj;
@@ -330,7 +332,19 @@ void FontImpl::LoadFontInternal() {
   std::string font_names;
   for (auto& it : name_)
     font_names = font_names + it + " ";
-  LOG(INFO) << "Failed to load Font: " << font_names.c_str();
+
+  // Throw font not find error
+  exception_state.ThrowContentError(ExceptionCode::kContentError,
+                                    "Failed to load font: " + font_names);
+}
+
+void FontImpl::EnsureFontSurfaceFormatInternal(SDL_Surface*& surf) {
+  SDL_Surface* format_surf = nullptr;
+  if (surf->format != SDL_PIXELFORMAT_ABGR8888) {
+    format_surf = SDL_ConvertSurface(surf, SDL_PIXELFORMAT_ABGR8888);
+    SDL_DestroySurface(surf);
+    surf = format_surf;
+  }
 }
 
 }  // namespace content

@@ -15,15 +15,17 @@ namespace content {
 class ToneImpl : public Tone {
  public:
   ToneImpl(const base::Vec4& value);
+  ToneImpl(const ToneImpl& other);
   ~ToneImpl() override = default;
-
-  ToneImpl(const ToneImpl&) = delete;
-  ToneImpl& operator=(const ToneImpl&) = delete;
 
   static scoped_refptr<ToneImpl> From(scoped_refptr<Tone> host);
 
-  void Set(float red, float green, float blue, float gray) override;
-  void Set(scoped_refptr<Tone> other) override;
+  void Set(float red,
+           float green,
+           float blue,
+           float gray,
+           ExceptionState& exception_state) override;
+  void Set(scoped_refptr<Tone> other, ExceptionState& exception_state) override;
 
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Red, float);
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Green, float);

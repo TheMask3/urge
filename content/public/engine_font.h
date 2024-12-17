@@ -9,7 +9,8 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 #include "content/public/engine_color.h"
 
 namespace content {
@@ -17,18 +18,23 @@ namespace content {
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=class)--*/
 class URGE_RUNTIME_API Font : public virtual base::RefCounted<Font> {
  public:
   virtual ~Font() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Font> New(const std::string& name,
+  static scoped_refptr<Font> New(ExecutionContext* execution_context,
+                                 const std::string& name,
                                  uint32_t size,
                                  ExceptionState& exception_state);
 
   /*--urge()--*/
-  static bool IsExisted(const std::string& name,
+  static scoped_refptr<Font> Copy(scoped_refptr<Font> other);
+
+  /*--urge()--*/
+  static bool IsExisted(ExecutionContext* execution_context,
+                        const std::string& name,
                         ExceptionState& exception_state);
 
   /*--urge()--*/

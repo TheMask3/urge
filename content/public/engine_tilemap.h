@@ -7,7 +7,8 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 #include "content/public/engine_bitmap.h"
 #include "content/public/engine_table.h"
 #include "content/public/engine_viewport.h"
@@ -19,13 +20,14 @@ class TilemapAutotile;
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=class)--*/
 class URGE_RUNTIME_API Tilemap : public virtual base::RefCounted<Tilemap> {
  public:
   virtual ~Tilemap() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Tilemap> New(scoped_refptr<Viewport> viewport,
+  static scoped_refptr<Tilemap> New(ExecutionContext* execution_context,
+                                    scoped_refptr<Viewport> viewport,
                                     ExceptionState& exception_state);
 
   /*--urge()--*/

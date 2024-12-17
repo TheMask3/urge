@@ -17,15 +17,18 @@ namespace content {
 class ColorImpl : public Color {
  public:
   ColorImpl(const base::Vec4& value);
+  ColorImpl(const ColorImpl& other);
   ~ColorImpl() override = default;
-
-  ColorImpl(const ColorImpl&) = delete;
-  ColorImpl& operator=(const ColorImpl&) = delete;
 
   static scoped_refptr<ColorImpl> From(scoped_refptr<Color> host);
 
-  void Set(float red, float green, float blue, float gray) override;
-  void Set(scoped_refptr<Color> other) override;
+  void Set(float red,
+           float green,
+           float blue,
+           float gray,
+           ExceptionState& exception_state) override;
+  void Set(scoped_refptr<Color> other,
+           ExceptionState& exception_state) override;
 
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Red, float);
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Green, float);

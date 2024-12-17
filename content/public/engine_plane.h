@@ -7,7 +7,8 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 #include "content/public/engine_bitmap.h"
 #include "content/public/engine_viewport.h"
 
@@ -16,13 +17,14 @@ namespace content {
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=class)--*/
 class URGE_RUNTIME_API Plane : public virtual base::RefCounted<Plane> {
  public:
   virtual ~Plane() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Plane> New(scoped_refptr<Viewport> viewport,
+  static scoped_refptr<Plane> New(ExecutionContext* execution_context,
+                                  scoped_refptr<Viewport> viewport,
                                   ExceptionState& exception_state);
 
   /*--urge()--*/

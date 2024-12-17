@@ -18,49 +18,29 @@
 
 namespace content {
 
-class ScopedFontData {
- public:
-  ScopedFontData(const std::string& default_font_name, filesystem::IO* io);
+struct ScopedFontData {
+  std::string default_font;
+  std::vector<std::string> default_name;
+  int default_size = 24;
+  bool default_bold = false;
+  bool default_italic = false;
+  bool default_outline = true;
+  bool default_shadow = false;
+  scoped_refptr<Color> default_color = nullptr;
+  scoped_refptr<Color> default_out_color = nullptr;
+
+  std::map<std::pair<std::string, int>, TTF_Font*> font_cache;
+  std::map<std::string, std::pair<int64_t, void*>> data_cache;
+
+  ScopedFontData(filesystem::IO* io,
+                 const std::string& default_font_name,
+                 ExceptionState& exception_state);
   ~ScopedFontData();
 
   ScopedFontData(const ScopedFontData&) = delete;
   ScopedFontData& operator=(const ScopedFontData&) = delete;
 
-  void* GetUIDefaultFont(int64_t* font_size);
-
-  bool Existed(const std::string& name);
-  void SetDefaultName(const std::vector<std::string>& name);
-  std::vector<std::string> GetDefaultName();
-  void SetDefaultSize(int size);
-  int GetDefaultSize();
-  void SetDefaultBold(bool bold);
-  bool GetDefaultBold();
-  void SetDefaultItalic(bool italic);
-  bool GetDefaultItalic();
-  void SetDefaultShadow(bool shadow);
-  bool GetDefaultShadow();
-  void SetDefaultOutline(bool outline);
-  bool GetDefaultOutline();
-  void SetDefaultColor(scoped_refptr<Color> color);
-  scoped_refptr<Color> GetDefaultColor();
-  void SetDefaultOutColor(scoped_refptr<Color> color);
-  scoped_refptr<Color> GetDefaultOutColor();
-
- private:
-  friend class FontImpl;
-
-  std::vector<std::string> default_name_;
-  int default_size_ = 24;
-  bool default_bold_ = false;
-  bool default_italic_ = false;
-  bool default_outline_ = true;
-  bool default_shadow_ = false;
-  scoped_refptr<Color> default_color_ = nullptr;
-  scoped_refptr<Color> default_out_color_ = nullptr;
-
-  std::string font_default_name_;
-  std::map<std::pair<std::string, int>, TTF_Font*> font_cache_;
-  std::map<std::string, std::pair<int64_t, void*>> cache_data_;
+  bool IsFontExisted(const std::string& name);
 };
 
 class FontImpl : public Font {
@@ -71,9 +51,10 @@ class FontImpl : public Font {
   FontImpl(const FontImpl&) = delete;
   FontImpl& operator=(const FontImpl&) = delete;
 
-  void EnsureLoadFont();
-  TTF_Font* AsSDLFont();
-  SDL_Surface* RenderText(const std::string& text, uint8_t* font_opacity);
+  TTF_Font* GetCanonicalFont(ExceptionState& exception_state);
+  SDL_Surface* RenderText(const std::string& text,
+                          uint8_t* font_opacity,
+                          ExceptionState& exception_state);
 
  protected:
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Name, std::vector<std::string>);
@@ -86,7 +67,8 @@ class FontImpl : public Font {
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(OutColor, scoped_refptr<Color>);
 
  private:
-  void LoadFontInternal();
+  void LoadFontInternal(ExceptionState& exception_state);
+  void EnsureFontSurfaceFormatInternal(SDL_Surface*& surf);
 
   std::vector<std::string> name_;
   int size_;

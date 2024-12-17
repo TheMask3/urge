@@ -7,7 +7,8 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 #include "content/public/engine_color.h"
 #include "content/public/engine_font.h"
 #include "content/public/engine_rect.h"
@@ -17,19 +18,27 @@ namespace content {
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=class)--*/
 class URGE_RUNTIME_API Bitmap : public virtual base::RefCounted<Bitmap> {
  public:
   virtual ~Bitmap() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Bitmap> New(const std::string& filename,
+  static scoped_refptr<Bitmap> New(ExecutionContext* execution_context,
+                                   const std::string& filename,
                                    ExceptionState& exception_state);
 
   /*--urge()--*/
-  static scoped_refptr<Bitmap> New(uint32_t width,
+  static scoped_refptr<Bitmap> New(ExecutionContext* execution_context,
+                                   uint32_t width,
                                    uint32_t height,
                                    ExceptionState& exception_state);
+
+  /*--urge()--*/
+  static scoped_refptr<Bitmap> Copy(scoped_refptr<Bitmap> other);
+
+  /*--urge()--*/
+  URGE_EXPORT_SERIALIZABLE(Bitmap);
 
   /*--urge()--*/
   virtual void Dispose(ExceptionState& exception_state) = 0;

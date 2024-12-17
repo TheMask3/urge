@@ -16,10 +16,12 @@ set(ENGINE_CONTENT_SRC
   common/color_impl.h
   common/rect_impl.cc
   common/rect_impl.h
+  common/table_impl.cc
+  common/table_impl.h
   common/tone_impl.cc
   common/tone_impl.h
-  exception/exception_state.cc
-  exception/exception_state.h
+  context/exception_state.cc
+  context/exception_state.h
   public/engine_bitmap.h
   public/engine_color.h
   public/engine_font.h

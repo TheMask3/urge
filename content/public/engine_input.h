@@ -7,14 +7,15 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 
 namespace content {
 
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=module)--*/
 class URGE_RUNTIME_API Input : public virtual base::RefCounted<Input> {
  public:
   virtual ~Input() = default;

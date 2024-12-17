@@ -13,16 +13,20 @@ namespace content {
 class RectImpl : public Rect {
  public:
   RectImpl(const base::Rect& rect);
+  RectImpl(const RectImpl& other);
   ~RectImpl() override = default;
-
-  RectImpl(const RectImpl&) = delete;
-  RectImpl& operator=(const RectImpl&) = delete;
 
   static scoped_refptr<RectImpl> From(scoped_refptr<Rect> host);
 
-  void Set(int32_t x, int32_t y, int32_t width, int32_t height) override;
-  void Set(scoped_refptr<Rect> other) override;
-  void Empty() override;
+  void Set(int32_t x,
+           int32_t y,
+           int32_t width,
+           int32_t height,
+           ExceptionState& exception_state) override;
+  void Set(
+      scoped_refptr<Rect> other,
+      ExceptionState& exception_stateExceptionState& exception_state) override;
+  void Empty(ExceptionState& exception_state) override;
 
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(X, int32_t);
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Y, int32_t);

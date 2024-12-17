@@ -8,15 +8,20 @@
 
 namespace content {
 
-scoped_refptr<Color> Color::New() {
+scoped_refptr<Color> Color::New(ExceptionState& exception_state) {
   return new ColorImpl(base::Vec4(0));
 }
 
 scoped_refptr<Color> Color::New(float red,
                                 float green,
                                 float blue,
-                                float gray) {
+                                float gray,
+                                ExceptionState& exception_state) {
   return new ColorImpl(base::Vec4(red, green, blue, gray));
+}
+
+scoped_refptr<Color> Color::Copy(scoped_refptr<Color> other) {
+  return new ColorImpl(*static_cast<ColorImpl*>(other.get()));
 }
 
 ColorImpl::ColorImpl(const base::Vec4& value) : value_(value), dirty_(true) {
@@ -26,11 +31,18 @@ ColorImpl::ColorImpl(const base::Vec4& value) : value_(value), dirty_(true) {
   value_.w = std::clamp(value_.w, 0.0f, 255.0f);
 }
 
+ColorImpl::ColorImpl(const ColorImpl& other)
+    : value_(other.value_), dirty_(true) {}
+
 scoped_refptr<ColorImpl> ColorImpl::From(scoped_refptr<Color> host) {
   return static_cast<ColorImpl*>(host.get());
 }
 
-void ColorImpl::Set(float red, float green, float blue, float gray) {
+void ColorImpl::Set(float red,
+                    float green,
+                    float blue,
+                    float gray,
+                    ExceptionState& exception_state) {
   value_.x = std::clamp(red, 0.0f, 255.0f);
   value_.y = std::clamp(green, 0.0f, 255.0f);
   value_.z = std::clamp(blue, 0.0f, 255.0f);
@@ -38,7 +50,8 @@ void ColorImpl::Set(float red, float green, float blue, float gray) {
   dirty_ = true;
 }
 
-void ColorImpl::Set(scoped_refptr<Color> other) {
+void ColorImpl::Set(scoped_refptr<Color> other,
+                    ExceptionState& exception_state) {
   value_ = static_cast<ColorImpl*>(other.get())->value_;
   dirty_ = true;
 }
@@ -63,44 +76,44 @@ std::pair<bool, base::Vec4> ColorImpl::FetchUpdateRequiredAndData() {
   return std::make_pair(has_changed, norm_);
 }
 
-float ColorImpl::Get_Red() {
+float ColorImpl::Get_Red(ExceptionState& exception_state) {
   return value_.x;
 }
 
-void ColorImpl::Put_Red(const float& value) {
+void ColorImpl::Put_Red(const float& value, ExceptionState& exception_state) {
   if (value_.x != value) {
     dirty_ = true;
     value_.x = std::clamp(value, 0.0f, 255.0f);
   }
 }
 
-float ColorImpl::Get_Green() {
+float ColorImpl::Get_Green(ExceptionState& exception_state) {
   return value_.y;
 }
 
-void ColorImpl::Put_Green(const float& value) {
+void ColorImpl::Put_Green(const float& value, ExceptionState& exception_state) {
   if (value_.y != value) {
     dirty_ = true;
     value_.y = std::clamp(value, 0.0f, 255.0f);
   }
 }
 
-float ColorImpl::Get_Blue() {
+float ColorImpl::Get_Blue(ExceptionState& exception_state) {
   return value_.z;
 }
 
-void ColorImpl::Put_Blue(const float& value) {
+void ColorImpl::Put_Blue(const float& value, ExceptionState& exception_state) {
   if (value_.z != value) {
     dirty_ = true;
     value_.z = std::clamp(value, 0.0f, 255.0f);
   }
 }
 
-float ColorImpl::Get_Alpha() {
+float ColorImpl::Get_Alpha(ExceptionState& exception_state) {
   return value_.w;
 }
 
-void ColorImpl::Put_Alpha(const float& value) {
+void ColorImpl::Put_Alpha(const float& value, ExceptionState& exception_state) {
   if (value_.w != value) {
     dirty_ = true;
     value_.w = std::clamp(value, 0.0f, 255.0f);

@@ -7,14 +7,15 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 
 namespace content {
 
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=class)--*/
 class URGE_RUNTIME_API Table : public virtual base::RefCounted<Table> {
  public:
   virtual ~Table() = default;
@@ -24,6 +25,20 @@ class URGE_RUNTIME_API Table : public virtual base::RefCounted<Table> {
                                   uint32_t ysize,
                                   uint32_t zsize,
                                   ExceptionState& exception_state);
+
+  /*--urge()--*/
+  static scoped_refptr<Table> Copy(scoped_refptr<Table> other);
+
+  /*--urge()--*/
+  URGE_EXPORT_SERIALIZABLE(Table);
+
+  /*--urge()--*/
+  virtual void Resize(uint32_t xsize, ExceptionState& exception_state) = 0;
+
+  /*--urge()--*/
+  virtual void Resize(uint32_t xsize,
+                      uint32_t ysize,
+                      ExceptionState& exception_state) = 0;
 
   /*--urge()--*/
   virtual void Resize(uint32_t xsize,
@@ -41,29 +56,10 @@ class URGE_RUNTIME_API Table : public virtual base::RefCounted<Table> {
   virtual uint32_t Zsize(ExceptionState& exception_state) = 0;
 
   /*--urge(alias_name:[])--*/
-  virtual int16_t Get(uint32_t x, ExceptionState& exception_state) = 0;
-
-  /*--urge(alias_name:[])--*/
-  virtual int16_t Get(uint32_t x,
-                      uint32_t y,
-                      ExceptionState& exception_state) = 0;
-
-  /*--urge(alias_name:[])--*/
   virtual int16_t Get(uint32_t x,
                       uint32_t y,
                       uint32_t z,
                       ExceptionState& exception_state) = 0;
-
-  /*--urge(alias_name:[]=)--*/
-  virtual void Put(uint32_t x,
-                   int16_t value,
-                   ExceptionState& exception_state) = 0;
-
-  /*--urge(alias_name:[]=)--*/
-  virtual void Put(uint32_t x,
-                   uint32_t y,
-                   int16_t value,
-                   ExceptionState& exception_state) = 0;
 
   /*--urge(alias_name:[]=)--*/
   virtual void Put(uint32_t x,

@@ -7,14 +7,15 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 
 namespace content {
 
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=class)--*/
 class URGE_RUNTIME_API Tone : public virtual base::RefCounted<Tone> {
  public:
   virtual ~Tone() = default;
@@ -28,6 +29,11 @@ class URGE_RUNTIME_API Tone : public virtual base::RefCounted<Tone> {
                                  float blue,
                                  float gray,
                                  ExceptionState& exception_state);
+
+  static scoped_refptr<Tone> Copy(scoped_refptr<Tone> other);
+
+  /*--urge()--*/
+  URGE_EXPORT_SERIALIZABLE(Tone);
 
   /*--urge()--*/
   virtual void Set(float red,

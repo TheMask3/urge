@@ -7,7 +7,8 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 #include "content/public/engine_bitmap.h"
 
 namespace content {
@@ -15,7 +16,7 @@ namespace content {
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=module)--*/
 class URGE_RUNTIME_API Graphics : public virtual base::RefCounted<Graphics> {
  public:
   virtual ~Graphics() = default;

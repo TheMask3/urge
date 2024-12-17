@@ -7,7 +7,8 @@
 
 #include "base/memory/ref_counted.h"
 #include "content/content_config.h"
-#include "content/exception/exception_state.h"
+#include "content/context/exception_state.h"
+#include "content/context/execution_context.h"
 #include "content/public/engine_color.h"
 #include "content/public/engine_rect.h"
 #include "content/public/engine_tone.h"
@@ -17,20 +18,23 @@ namespace content {
 // IDL generator format:
 // Inhert: refcounted only.
 // Interface referrence: RPGVXAce.chm
-/*--urge()--*/
+/*--urge(type=class)--*/
 class URGE_RUNTIME_API Viewport : public virtual base::RefCounted<Viewport> {
  public:
   virtual ~Viewport() = default;
 
   /*--urge()--*/
-  static scoped_refptr<Viewport> New(ExceptionState& exception_state);
-
-  /*--urge()--*/
-  static scoped_refptr<Viewport> New(scoped_refptr<Rect> rect,
+  static scoped_refptr<Viewport> New(ExecutionContext* execution_context,
                                      ExceptionState& exception_state);
 
   /*--urge()--*/
-  static scoped_refptr<Viewport> New(int32_t x,
+  static scoped_refptr<Viewport> New(ExecutionContext* execution_context,
+                                     scoped_refptr<Rect> rect,
+                                     ExceptionState& exception_state);
+
+  /*--urge()--*/
+  static scoped_refptr<Viewport> New(ExecutionContext* execution_context,
+                                     int32_t x,
                                      int32_t y,
                                      int32_t width,
                                      int32_t height,

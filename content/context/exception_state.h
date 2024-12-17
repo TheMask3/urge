@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CONTENT_EXCEPTION_EXCEPTION_STATE_H_
-#define CONTENT_EXCEPTION_EXCEPTION_STATE_H_
+#ifndef CONTENT_CONTEXT_EXCEPTION_STATE_H_
+#define CONTENT_CONTEXT_EXCEPTION_STATE_H_
 
 #include "base/buildflags/compiler_specific.h"
 #include "base/memory/stack_allocated.h"
@@ -53,4 +53,4 @@ class ExceptionState {
 
 }  // namespace content
 
-#endif  //! CONTENT_EXCEPTION_EXCEPTION_STATE_H_
+#endif  //! CONTENT_CONTEXT_EXCEPTION_STATE_H_
