@@ -37,7 +37,6 @@ set(ENGINE_CONTENT_SRC
   public/engine_window.h
   render/drawable_controller.cc
   render/drawable_controller.h
-  resource/render_resources.h
   screen/renderscreen_impl.cc
   screen/renderscreen_impl.h
   content_config.h

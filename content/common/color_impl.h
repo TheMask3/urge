@@ -39,6 +39,8 @@ class ColorImpl : public Color {
   std::pair<bool, base::Vec4> FetchUpdateRequiredAndData();
 
  private:
+  friend class Color;
+
   base::Vec4 value_;
   base::Vec4 norm_;
   bool dirty_;

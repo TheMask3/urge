@@ -18,8 +18,6 @@ class TableImpl : public Table {
   TableImpl(const TableImpl& other);
   ~TableImpl() override = default;
 
-  bool FetchDirtyStatus();
-
   void Resize(uint32_t xsize, ExceptionState& exception_state) override;
   void Resize(uint32_t xsize,
               uint32_t ysize,
@@ -40,6 +38,8 @@ class TableImpl : public Table {
            uint32_t z,
            int16_t value,
            ExceptionState& exception_state) override;
+
+  bool FetchDirtyStatus();
 
  private:
   friend class Table;

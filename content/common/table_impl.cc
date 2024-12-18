@@ -56,9 +56,7 @@ std::string Table::Serialize(scoped_refptr<Table> value,
   *ptr++ = impl->y_size_;
   *ptr++ = impl->z_size_;
   *ptr++ = data_size;
-
-  memcpy(serial_data.data() + sizeof(int16_t) * 5, impl->data_.data(),
-         sizeof(int16_t) * data_size);
+  memcpy(ptr, impl->data_.data(), sizeof(int16_t) * data_size);
 
   return serial_data;
 }
@@ -76,14 +74,6 @@ TableImpl::TableImpl(const TableImpl& other)
       y_size_(other.y_size_),
       z_size_(other.z_size_),
       data_(other.data_) {}
-
-bool TableImpl::FetchDirtyStatus() {
-  if (dirty_) {
-    dirty_ = false;
-    return true;
-  }
-  return false;
-}
 
 void TableImpl::Resize(uint32_t xsize, ExceptionState& exception_state) {
   Resize(xsize, y_size_, z_size_, exception_state);
@@ -142,6 +132,14 @@ void TableImpl::Put(uint32_t x,
                     int16_t value,
                     ExceptionState& exception_state) {
   data_[x + x_size_ * y + x_size_ * y_size_ * z] = value;
+}
+
+bool TableImpl::FetchDirtyStatus() {
+  if (dirty_) {
+    dirty_ = false;
+    return true;
+  }
+  return false;
 }
 
 }  // namespace content

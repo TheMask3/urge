@@ -35,6 +35,8 @@ class ToneImpl : public Tone {
   std::pair<bool, base::Vec4> FetchUpdateRequiredAndData();
 
  private:
+  friend class Tone;
+
   base::Vec4 value_;
   base::Vec4 norm_;
   bool dirty_;
