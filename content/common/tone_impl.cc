@@ -62,27 +62,29 @@ void ToneImpl::Set(float red,
   value_.y = std::clamp(green, -255.0f, 255.0f);
   value_.z = std::clamp(blue, -255.0f, 255.0f);
   value_.w = std::clamp(gray, 0.0f, 255.0f);
-  dirty_ = true;
+  NotifyObservers();
 }
 
 void ToneImpl::Set(scoped_refptr<Tone> other, ExceptionState& exception_state) {
   value_ = static_cast<ToneImpl*>(other.get())->value_;
-  dirty_ = true;
+  NotifyObservers();
 }
 
-std::pair<bool, base::Vec4> ToneImpl::FetchUpdateRequiredAndData() {
-  bool has_changed = dirty_;
-
+base::Vec4 ToneImpl::AsNormColor() {
   if (dirty_) {
     dirty_ = false;
-
     norm_.x = value_.x / 255.0f;
     norm_.y = value_.y / 255.0f;
     norm_.z = value_.z / 255.0f;
     norm_.w = value_.w / 255.0f;
   }
 
-  return std::make_pair(has_changed, norm_);
+  return norm_;
+}
+
+void ToneImpl::NotifyObservers() {
+  ValueNotification::NotifyObservers();
+  dirty_ = true;
 }
 
 float ToneImpl::Get_Red(ExceptionState& exception_state) {
@@ -91,8 +93,8 @@ float ToneImpl::Get_Red(ExceptionState& exception_state) {
 
 void ToneImpl::Put_Red(const float& value, ExceptionState& exception_state) {
   if (value_.x != value) {
-    dirty_ = true;
     value_.x = std::clamp(value, -255.0f, 255.0f);
+    NotifyObservers();
   }
 }
 
@@ -102,8 +104,8 @@ float ToneImpl::Get_Green(ExceptionState& exception_state) {
 
 void ToneImpl::Put_Green(const float& value, ExceptionState& exception_state) {
   if (value_.y != value) {
-    dirty_ = true;
     value_.y = std::clamp(value, -255.0f, 255.0f);
+    NotifyObservers();
   }
 }
 
@@ -113,8 +115,8 @@ float ToneImpl::Get_Blue(ExceptionState& exception_state) {
 
 void ToneImpl::Put_Blue(const float& value, ExceptionState& exception_state) {
   if (value_.z != value) {
-    dirty_ = true;
     value_.z = std::clamp(value, -255.0f, 255.0f);
+    NotifyObservers();
   }
 }
 
@@ -124,8 +126,8 @@ float ToneImpl::Get_Gray(ExceptionState& exception_state) {
 
 void ToneImpl::Put_Gray(const float& value, ExceptionState& exception_state) {
   if (value_.w != value) {
-    dirty_ = true;
     value_.w = std::clamp(value, 0.0f, 255.0f);
+    NotifyObservers();
   }
 }
 

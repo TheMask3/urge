@@ -8,11 +8,12 @@
 #include <tuple>
 
 #include "base/math/vector.h"
+#include "content/common/value_observer.h"
 #include "content/public/engine_tone.h"
 
 namespace content {
 
-class ToneImpl : public Tone {
+class ToneImpl : public Tone, public ValueNotification {
  public:
   ToneImpl(const base::Vec4& value);
   ToneImpl(const ToneImpl& other);
@@ -32,10 +33,11 @@ class ToneImpl : public Tone {
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Blue, float);
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Gray, float);
 
-  std::pair<bool, base::Vec4> FetchUpdateRequiredAndData();
+  base::Vec4 AsNormColor();
 
  private:
   friend class Tone;
+  void NotifyObservers() override;
 
   base::Vec4 value_;
   base::Vec4 norm_;

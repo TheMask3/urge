@@ -10,11 +10,12 @@
 #include "SDL3/SDL_pixels.h"
 
 #include "base/math/vector.h"
+#include "content/common/value_observer.h"
 #include "content/public/engine_color.h"
 
 namespace content {
 
-class ColorImpl : public Color {
+class ColorImpl : public Color, public ValueNotification {
  public:
   ColorImpl(const base::Vec4& value);
   ColorImpl(const ColorImpl& other);
@@ -36,10 +37,11 @@ class ColorImpl : public Color {
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Alpha, float);
 
   SDL_Color AsSDLColor();
-  std::pair<bool, base::Vec4> FetchUpdateRequiredAndData();
+  base::Vec4 AsNormColor();
 
  private:
   friend class Color;
+  void NotifyObservers() override;
 
   base::Vec4 value_;
   base::Vec4 norm_;

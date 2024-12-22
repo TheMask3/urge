@@ -100,13 +100,13 @@ scoped_refptr<Font> Font::New(ExecutionContext* execution_context,
                               const std::string& name,
                               uint32_t size,
                               ExceptionState& exception_state) {
-  return new FontImpl();
+  return new FontImpl(execution_context->GetFontContext());
 }
 
 bool Font::IsExisted(ExecutionContext* execution_context,
                      const std::string& name,
                      ExceptionState& exception_state) {
-  return false;
+  return execution_context->GetFontContext()->IsFontExisted(name);
 }
 
 URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font,
@@ -240,6 +240,10 @@ void FontImpl::Put_OutColor(const scoped_refptr<Color>& value,
                             ExceptionState& exception_state) {
   out_color_ = value;
 }
+
+FontImpl::FontImpl(ScopedFontData* parent) : parent_(parent) {}
+
+FontImpl::~FontImpl() {}
 
 TTF_Font* FontImpl::GetCanonicalFont(ExceptionState& exception_state) {
   if (!font_)

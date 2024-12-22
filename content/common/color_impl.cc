@@ -62,13 +62,13 @@ void ColorImpl::Set(float red,
   value_.y = std::clamp(green, 0.0f, 255.0f);
   value_.z = std::clamp(blue, 0.0f, 255.0f);
   value_.w = std::clamp(gray, 0.0f, 255.0f);
-  dirty_ = true;
+  NotifyObservers();
 }
 
 void ColorImpl::Set(scoped_refptr<Color> other,
                     ExceptionState& exception_state) {
   value_ = static_cast<ColorImpl*>(other.get())->value_;
-  dirty_ = true;
+  NotifyObservers();
 }
 
 SDL_Color ColorImpl::AsSDLColor() {
@@ -76,19 +76,21 @@ SDL_Color ColorImpl::AsSDLColor() {
           static_cast<uint8_t>(value_.z), static_cast<uint8_t>(value_.w)};
 }
 
-std::pair<bool, base::Vec4> ColorImpl::FetchUpdateRequiredAndData() {
-  bool has_changed = dirty_;
-
+base::Vec4 ColorImpl::AsNormColor() {
   if (dirty_) {
     dirty_ = false;
-
     norm_.x = value_.x / 255.0f;
     norm_.y = value_.y / 255.0f;
     norm_.z = value_.z / 255.0f;
     norm_.w = value_.w / 255.0f;
   }
 
-  return std::make_pair(has_changed, norm_);
+  return norm_;
+}
+
+void ColorImpl::NotifyObservers() {
+  ValueNotification::NotifyObservers();
+  dirty_ = true;
 }
 
 float ColorImpl::Get_Red(ExceptionState& exception_state) {
@@ -97,8 +99,8 @@ float ColorImpl::Get_Red(ExceptionState& exception_state) {
 
 void ColorImpl::Put_Red(const float& value, ExceptionState& exception_state) {
   if (value_.x != value) {
-    dirty_ = true;
     value_.x = std::clamp(value, 0.0f, 255.0f);
+    NotifyObservers();
   }
 }
 
@@ -108,8 +110,8 @@ float ColorImpl::Get_Green(ExceptionState& exception_state) {
 
 void ColorImpl::Put_Green(const float& value, ExceptionState& exception_state) {
   if (value_.y != value) {
-    dirty_ = true;
     value_.y = std::clamp(value, 0.0f, 255.0f);
+    NotifyObservers();
   }
 }
 
@@ -119,8 +121,8 @@ float ColorImpl::Get_Blue(ExceptionState& exception_state) {
 
 void ColorImpl::Put_Blue(const float& value, ExceptionState& exception_state) {
   if (value_.z != value) {
-    dirty_ = true;
     value_.z = std::clamp(value, 0.0f, 255.0f);
+    NotifyObservers();
   }
 }
 
@@ -130,8 +132,8 @@ float ColorImpl::Get_Alpha(ExceptionState& exception_state) {
 
 void ColorImpl::Put_Alpha(const float& value, ExceptionState& exception_state) {
   if (value_.w != value) {
-    dirty_ = true;
     value_.w = std::clamp(value, 0.0f, 255.0f);
+    NotifyObservers();
   }
 }
 

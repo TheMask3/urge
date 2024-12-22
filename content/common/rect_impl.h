@@ -6,11 +6,12 @@
 #define CONTENT_COMMON_RECT_IMPL_H_
 
 #include "base/math/rectangle.h"
+#include "content/common/value_observer.h"
 #include "content/public/engine_rect.h"
 
 namespace content {
 
-class RectImpl : public Rect {
+class RectImpl : public Rect, public ValueNotification {
  public:
   RectImpl(const base::Rect& rect);
   RectImpl(const RectImpl& other);
@@ -23,9 +24,7 @@ class RectImpl : public Rect {
            int32_t width,
            int32_t height,
            ExceptionState& exception_state) override;
-  void Set(
-      scoped_refptr<Rect> other,
-      ExceptionState& exception_stateExceptionState& exception_state) override;
+  void Set(scoped_refptr<Rect> other, ExceptionState& exception_state) override;
   void Empty(ExceptionState& exception_state) override;
 
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(X, int32_t);
@@ -33,12 +32,12 @@ class RectImpl : public Rect {
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Width, int32_t);
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Height, int32_t);
 
-  bool FetchDirtyStatus();
   base::Rect AsBaseRect();
 
  private:
+  friend class Rect;
+
   base::Rect rect_;
-  bool dirty_;
 };
 
 }  // namespace content

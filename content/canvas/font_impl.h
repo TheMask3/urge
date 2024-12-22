@@ -45,7 +45,7 @@ struct ScopedFontData {
 
 class FontImpl : public Font {
  public:
-  FontImpl();
+  FontImpl(ScopedFontData* parent);
   ~FontImpl() override;
 
   FontImpl(const FontImpl&) = delete;

@@ -22,9 +22,24 @@ scoped_refptr<Rect> Rect::Copy(scoped_refptr<Rect> other) {
   return new RectImpl(*static_cast<RectImpl*>(other.get()));
 }
 
-RectImpl::RectImpl(const base::Rect& rect) : rect_(rect), dirty_(true) {}
+scoped_refptr<Rect> Rect::Deserialize(const std::string& data,
+                                      ExceptionState& exception_state) {
+  const int32_t* ptr = reinterpret_cast<const int32_t*>(data.data());
+  RectImpl* impl = new RectImpl(base::Rect(*ptr++, *ptr++, *ptr++, *ptr++));
+  return impl;
+}
 
-RectImpl::RectImpl(const RectImpl& other) : rect_(other.rect_), dirty_(true) {}
+std::string Rect::Serialize(scoped_refptr<Rect> value,
+                            ExceptionState& exception_state) {
+  RectImpl* impl = static_cast<RectImpl*>(value.get());
+  std::string serial_data(sizeof(base::Rect), 0);
+  memcpy(serial_data.data(), &impl->rect_, sizeof(base::Rect));
+  return serial_data;
+}
+
+RectImpl::RectImpl(const base::Rect& rect) : rect_(rect) {}
+
+RectImpl::RectImpl(const RectImpl& other) : rect_(other.rect_) {}
 
 scoped_refptr<RectImpl> RectImpl::From(scoped_refptr<Rect> host) {
   return static_cast<RectImpl*>(host.get());
@@ -36,25 +51,17 @@ void RectImpl::Set(int32_t x,
                    int32_t height,
                    ExceptionState& exception_state) {
   rect_ = base::Rect(x, y, width, height);
-  dirty_ = true;
+  NotifyObservers();
 }
 
 void RectImpl::Set(scoped_refptr<Rect> other, ExceptionState& exception_state) {
   rect_ = static_cast<RectImpl*>(other.get())->rect_;
-  dirty_ = true;
+  NotifyObservers();
 }
 
 void RectImpl::Empty(ExceptionState& exception_state) {
   rect_ = base::Rect();
-  dirty_ = true;
-}
-
-bool RectImpl::FetchDirtyStatus() {
-  if (dirty_) {
-    dirty_ = false;
-    return true;
-  }
-  return false;
+  NotifyObservers();
 }
 
 base::Rect RectImpl::AsBaseRect() {
@@ -71,7 +78,7 @@ int32_t RectImpl::Get_X(ExceptionState& exception_state) {
 void RectImpl::Put_X(const int32_t& value, ExceptionState& exception_state) {
   if (rect_.x != value) {
     rect_.x = value;
-    dirty_ = true;
+    NotifyObservers();
   }
 }
 
@@ -82,7 +89,7 @@ int32_t RectImpl::Get_Y(ExceptionState& exception_state) {
 void RectImpl::Put_Y(const int32_t& value, ExceptionState& exception_state) {
   if (rect_.y != value) {
     rect_.y = value;
-    dirty_ = true;
+    NotifyObservers();
   }
 }
 
@@ -94,7 +101,7 @@ void RectImpl::Put_Width(const int32_t& value,
                          ExceptionState& exception_state) {
   if (rect_.width != value) {
     rect_.width = value;
-    dirty_ = true;
+    NotifyObservers();
   }
 }
 
@@ -106,7 +113,7 @@ void RectImpl::Put_Height(const int32_t& value,
                           ExceptionState& exception_state) {
   if (rect_.height != value) {
     rect_.height = value;
-    dirty_ = true;
+    NotifyObservers();
   }
 }
 
