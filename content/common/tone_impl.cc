@@ -20,7 +20,9 @@ scoped_refptr<Tone> Tone::New(float red,
   return new ToneImpl(base::Vec4(red, green, blue, gray));
 }
 
-scoped_refptr<Tone> Tone::Copy(scoped_refptr<Tone> other) {
+scoped_refptr<Tone> Tone::Copy(ExecutionContext* execution_context,
+                               scoped_refptr<Tone> other,
+                               ExceptionState& exception_state) {
   return new ToneImpl(*static_cast<ToneImpl*>(other.get()));
 }
 
@@ -48,6 +50,12 @@ ToneImpl::ToneImpl(const base::Vec4& value) : value_(value), dirty_(true) {
 
 ToneImpl::ToneImpl(const ToneImpl& other)
     : value_(other.value_), dirty_(true) {}
+
+ToneImpl& ToneImpl::operator=(const ToneImpl& other) {
+  value_ = other.value_;
+  dirty_ = other.dirty_;
+  return *this;
+}
 
 scoped_refptr<ToneImpl> ToneImpl::From(scoped_refptr<Tone> host) {
   return static_cast<ToneImpl*>(host.get());

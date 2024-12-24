@@ -36,18 +36,16 @@ bool SingleWorker::WaitWorkerSynchronize() {
 
 void SingleWorker::Flush() {
   WorkerTaskTraits queued_task;
-
-  if (mode_ == WorkerScheduleMode::kAsync)
-    task_queue_.wait_dequeue_timed(queued_task, std::chrono::milliseconds(1));
-  else
-    task_queue_.try_dequeue(queued_task);
+  if (!task_queue_.try_dequeue(queued_task) &&
+      mode_ == WorkerScheduleMode::kAsync)
+    std::this_thread::yield();
 
   if (!queued_task.is_null())
     std::move(queued_task).Run(this);
 }
 
 void SingleWorker::YieldFiber() {
-  if (scheduler_)
+  if (scheduler_ && mode_ == WorkerScheduleMode::kCoroutine)
     fiber_switch(scheduler_->primary_coroutine_);
 }
 

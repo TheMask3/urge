@@ -6,6 +6,7 @@
 #define CONTENT_CANVAS_CANVAS_SCHEDULER_H_
 
 #include "base/worker/single_worker.h"
+#include "content/canvas/canvas_impl.h"
 #include "renderer/context/device_context.h"
 #include "renderer/device/render_device.h"
 
@@ -30,9 +31,19 @@ class CanvasScheduler {
   // If worker set to null, it will be executed immediately on caller thread.
   void BindRenderWorker(base::SingleWorker* worker);
 
+  // Bind child canvas in linked node,
+  // scheduler will auto clear pending commands in canvas queue.
+  void AttachChildCanvas(CanvasImpl* child);
+
+  // Sync all pending command to device queue,
+  // clear children canvas command queue.
+  void SubmitPendingPaintCommands(const wgpu::CommandEncoder& encoder);
+
  private:
   CanvasScheduler(renderer::RenderDevice* device,
                   renderer::DeviceContext* context);
+
+  base::LinkedList<CanvasImpl> children_;
 
   renderer::RenderDevice* logic_device_;
   renderer::DeviceContext* painter_context_;

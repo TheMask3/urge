@@ -31,7 +31,9 @@ class URGE_RUNTIME_API Rect : public virtual base::RefCounted<Rect> {
                                  ExceptionState& exception_state);
 
   /*--urge()--*/
-  static scoped_refptr<Rect> Copy(scoped_refptr<Rect> other);
+  static scoped_refptr<Rect> Copy(ExecutionContext* execution_context,
+                                  scoped_refptr<Rect> other,
+                                  ExceptionState& exception_state);
 
   /*--urge()--*/
   URGE_EXPORT_SERIALIZABLE(Rect);

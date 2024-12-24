@@ -5,33 +5,55 @@
 #ifndef RENDERER_PIPELINE_RENDER_PIPELINE_H_
 #define RENDERER_PIPELINE_RENDER_PIPELINE_H_
 
-#include "renderer/device/render_device.h"
+#include "renderer/vertex/vertex_layout.h"
 
 namespace renderer {
 
+enum BlendType {
+  kNormal = 0,
+  kAddition,
+  kSubstraction,
+  kNoBlend,
+
+  kBlendNums,
+};
+
 class RenderPipelineBase {
  public:
-  ~RenderPipelineBase() = default;
+  virtual ~RenderPipelineBase() = default;
 
   RenderPipelineBase(const RenderPipelineBase&) = delete;
   RenderPipelineBase& operator=(const RenderPipelineBase&) = delete;
 
-  wgpu::RenderPipeline* GetPipeline() { return &pipeline_; }
+  wgpu::RenderPipeline* GetPipeline(BlendType blend) {
+    return &pipelines_[blend];
+  }
 
  protected:
   RenderPipelineBase(const wgpu::Device& device);
 
-  void BuildPipeline(
-      const std::string& shader_source,
-      const std::string& vs_entry,
-      const std::string& fs_entry,
-      const std::vector<wgpu::VertexBufferLayout>& vertex_layout,
-      const std::vector<wgpu::BindGroupLayout>& bind_layout,
-      const std::vector<wgpu::ColorTargetState>& attachment_target);
+  void BuildPipeline(const std::string& shader_source,
+                     const std::string& vs_entry,
+                     const std::string& fs_entry,
+                     const std::vector<wgpu::VertexBufferLayout>& vertex_layout,
+                     const std::vector<wgpu::BindGroupLayout>& bind_layout,
+                     wgpu::TextureFormat target_format);
 
  private:
   wgpu::Device device_;
-  wgpu::RenderPipeline pipeline_;
+  std::vector<wgpu::RenderPipeline> pipelines_;
+};
+
+class Pipeline_Base : public RenderPipelineBase {
+ public:
+  using VertexType = FullVertexLayout;
+  Pipeline_Base(const wgpu::Device& device, wgpu::TextureFormat target);
+};
+
+class Pipeline_Color : public RenderPipelineBase {
+ public:
+  using VertexType = FullVertexLayout;
+  Pipeline_Color(const wgpu::Device& device, wgpu::TextureFormat target);
 };
 
 }  // namespace renderer

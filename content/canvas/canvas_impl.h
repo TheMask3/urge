@@ -5,7 +5,6 @@
 #ifndef CONTENT_CANVAS_CANVAS_IMPL_H_
 #define CONTENT_CANVAS_CANVAS_IMPL_H_
 
-#include "MemoryPool/MemoryPool.h"
 #include "SDL3/SDL_surface.h"
 
 #include "base/containers/linked_list.h"

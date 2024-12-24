@@ -43,11 +43,9 @@ TTF_Font* ReadFontFromMemory(
 }  // namespace
 
 ScopedFontData::ScopedFontData(filesystem::IO* io,
-                               const std::string& default_font_name,
-                               ExceptionState& exception_state)
-    : default_color(
-          Color::New(255.0f, 255.0f, 255.0f, 255.0f, exception_state)),
-      default_out_color(Color::New(0, 0, 0, 255.0f, exception_state)) {
+                               const std::string& default_font_name)
+    : default_color(new ColorImpl(base::Vec4(255.0f, 255.0f, 255.0f, 255.0f))),
+      default_out_color(new ColorImpl(base::Vec4(0, 0, 0, 255.0f))) {
   // Get font load dir and default font
   std::string filename(default_font_name);
   std::string dir("."), file;
@@ -101,6 +99,12 @@ scoped_refptr<Font> Font::New(ExecutionContext* execution_context,
                               uint32_t size,
                               ExceptionState& exception_state) {
   return new FontImpl(execution_context->GetFontContext());
+}
+
+scoped_refptr<Font> Font::Copy(ExecutionContext* execution_context,
+                               scoped_refptr<Font> other,
+                               ExceptionState& exception_state) {
+  return new FontImpl(*static_cast<FontImpl*>(other.get()));
 }
 
 bool Font::IsExisted(ExecutionContext* execution_context,
@@ -166,7 +170,7 @@ URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font, DefaultColor, scoped_refptr<Color>) {
 }
 
 URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font, DefaultColor, scoped_refptr<Color>) {
-  execution_context->GetFontContext()->default_color = value;
+  *execution_context->GetFontContext()->default_color = *ColorImpl::From(value);
 }
 
 URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font,
@@ -178,7 +182,8 @@ URGE_DECLARE_STATIC_ATTRIBUTE_READ(Font,
 URGE_DECLARE_STATIC_ATTRIBUTE_WRITE(Font,
                                     DefaultOutColor,
                                     scoped_refptr<Color>) {
-  execution_context->GetFontContext()->default_out_color = value;
+  *execution_context->GetFontContext()->default_out_color =
+      *ColorImpl::From(value);
 }
 
 std::vector<std::string> FontImpl::Get_Name(ExceptionState& exception_state) {
@@ -188,6 +193,7 @@ std::vector<std::string> FontImpl::Get_Name(ExceptionState& exception_state) {
 void FontImpl::Put_Name(const std::vector<std::string>& value,
                         ExceptionState& exception_state) {
   name_ = value;
+  font_ = nullptr;
 }
 
 uint32_t FontImpl::Get_Size(ExceptionState& exception_state) {
@@ -197,6 +203,7 @@ uint32_t FontImpl::Get_Size(ExceptionState& exception_state) {
 void FontImpl::Put_Size(const uint32_t& value,
                         ExceptionState& exception_state) {
   size_ = value;
+  font_ = nullptr;
 }
 
 bool FontImpl::Get_Italic(ExceptionState& exception_state) {
@@ -205,6 +212,7 @@ bool FontImpl::Get_Italic(ExceptionState& exception_state) {
 
 void FontImpl::Put_Italic(const bool& value, ExceptionState& exception_state) {
   italic_ = value;
+  font_ = nullptr;
 }
 
 bool FontImpl::Get_Outline(ExceptionState& exception_state) {
@@ -213,6 +221,7 @@ bool FontImpl::Get_Outline(ExceptionState& exception_state) {
 
 void FontImpl::Put_Outline(const bool& value, ExceptionState& exception_state) {
   outline_ = value;
+  font_ = nullptr;
 }
 
 bool FontImpl::Get_Shadow(ExceptionState& exception_state) {
@@ -221,6 +230,7 @@ bool FontImpl::Get_Shadow(ExceptionState& exception_state) {
 
 void FontImpl::Put_Shadow(const bool& value, ExceptionState& exception_state) {
   shadow_ = value;
+  font_ = nullptr;
 }
 
 scoped_refptr<Color> FontImpl::Get_Color(ExceptionState& exception_state) {
@@ -229,7 +239,8 @@ scoped_refptr<Color> FontImpl::Get_Color(ExceptionState& exception_state) {
 
 void FontImpl::Put_Color(const scoped_refptr<Color>& value,
                          ExceptionState& exception_state) {
-  color_ = value;
+  *color_ = *ColorImpl::From(value);
+  font_ = nullptr;
 }
 
 scoped_refptr<Color> FontImpl::Get_OutColor(ExceptionState& exception_state) {
@@ -238,12 +249,54 @@ scoped_refptr<Color> FontImpl::Get_OutColor(ExceptionState& exception_state) {
 
 void FontImpl::Put_OutColor(const scoped_refptr<Color>& value,
                             ExceptionState& exception_state) {
-  out_color_ = value;
+  *out_color_ = *ColorImpl::From(value);
+  font_ = nullptr;
 }
 
-FontImpl::FontImpl(ScopedFontData* parent) : parent_(parent) {}
+FontImpl::FontImpl(ScopedFontData* parent)
+    : name_(parent->default_name),
+      size_(parent->default_size),
+      bold_(parent->default_bold),
+      italic_(parent->default_italic),
+      outline_(parent->default_outline),
+      shadow_(parent->default_shadow),
+      color_(new ColorImpl(base::Vec4())),
+      out_color_(new ColorImpl(base::Vec4())),
+      parent_(parent),
+      font_(nullptr) {
+  ExceptionState exception_state;
+  color_->Set(parent->default_color, exception_state);
+  out_color_->Set(parent->default_out_color, exception_state);
+}
 
-FontImpl::~FontImpl() {}
+FontImpl::FontImpl(const FontImpl& other)
+    : name_(other.name_),
+      size_(other.size_),
+      bold_(other.bold_),
+      italic_(other.italic_),
+      outline_(other.outline_),
+      shadow_(other.shadow_),
+      color_(new ColorImpl(base::Vec4())),
+      out_color_(new ColorImpl(base::Vec4())),
+      parent_(other.parent_),
+      font_(nullptr) {
+  ExceptionState exception_state;
+  color_->Set(other.color_, exception_state);
+  out_color_->Set(other.out_color_, exception_state);
+}
+
+FontImpl& FontImpl::operator=(const FontImpl& other) {
+  name_ = other.name_;
+  size_ = other.size_;
+  bold_ = other.bold_;
+  italic_ = other.italic_;
+  outline_ = other.outline_;
+  shadow_ = other.shadow_;
+  color_ = new ColorImpl(base::Vec4());
+  out_color_ = new ColorImpl(base::Vec4());
+  font_ = nullptr;
+  return *this;
+}
 
 TTF_Font* FontImpl::GetCanonicalFont(ExceptionState& exception_state) {
   if (!font_)

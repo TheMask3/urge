@@ -4,7 +4,48 @@
 
 #include "renderer/pipeline/render_pipeline.h"
 
+#include "renderer/pipeline/builtin_wgsl.h"
+
 namespace renderer {
+
+namespace {
+
+wgpu::BlendState GetWGPUBlendState(BlendType type) {
+  wgpu::BlendState state;
+  switch (type) {
+    default:
+    case renderer::BlendType::kNormal:
+      state.color.operation = wgpu::BlendOperation::Add;
+      state.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+      state.color.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+      state.alpha.operation = wgpu::BlendOperation::Add;
+      state.alpha.srcFactor = wgpu::BlendFactor::One;
+      state.alpha.dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha;
+      break;
+    case renderer::BlendType::kAddition:
+      state.color.operation = wgpu::BlendOperation::Add;
+      state.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+      state.color.dstFactor = wgpu::BlendFactor::One;
+      state.alpha.operation = wgpu::BlendOperation::Add;
+      state.alpha.srcFactor = wgpu::BlendFactor::One;
+      state.alpha.dstFactor = wgpu::BlendFactor::One;
+      break;
+    case renderer::BlendType::kSubstraction:
+      state.color.operation = wgpu::BlendOperation::ReverseSubtract;
+      state.color.srcFactor = wgpu::BlendFactor::SrcAlpha;
+      state.color.dstFactor = wgpu::BlendFactor::One;
+      state.alpha.operation = wgpu::BlendOperation::ReverseSubtract;
+      state.alpha.srcFactor = wgpu::BlendFactor::Zero;
+      state.alpha.dstFactor = wgpu::BlendFactor::One;
+      break;
+    case renderer::BlendType::kNoBlend:
+      break;
+  }
+
+  return state;
+}
+
+}  // namespace
 
 RenderPipelineBase::RenderPipelineBase(const wgpu::Device& device)
     : device_(device) {}
@@ -15,7 +56,7 @@ void RenderPipelineBase::BuildPipeline(
     const std::string& fs_entry,
     const std::vector<wgpu::VertexBufferLayout>& vertex_layout,
     const std::vector<wgpu::BindGroupLayout>& bind_layout,
-    const std::vector<wgpu::ColorTargetState>& attachment_target) {
+    wgpu::TextureFormat target_format) {
   wgpu::ShaderModuleWGSLDescriptor wgsl_desc;
   wgsl_desc.code = std::string_view(shader_source);
 
@@ -36,18 +77,80 @@ void RenderPipelineBase::BuildPipeline(
   vertex_state.bufferCount = vertex_layout.size();
   vertex_state.buffers = vertex_layout.data();
 
+  wgpu::ColorTargetState color_target;
+  color_target.format = target_format;
+
   wgpu::FragmentState fragment_state;
   fragment_state.module = shader_module;
   fragment_state.entryPoint = std::string_view(fs_entry);
-  fragment_state.targetCount = attachment_target.size();
-  fragment_state.targets = attachment_target.data();
+  fragment_state.targetCount = 1;
+  fragment_state.targets = &color_target;
 
   wgpu::RenderPipelineDescriptor descriptor;
   descriptor.layout = pipeline_layout;
   descriptor.vertex = vertex_state;
   descriptor.fragment = &fragment_state;
 
-  pipeline_ = device_.CreateRenderPipeline(&descriptor);
+  for (int i = 0; i < BlendType::kBlendNums; ++i) {
+    auto blend_state = GetWGPUBlendState(static_cast<BlendType>(i));
+    color_target.blend = &blend_state;
+    pipelines_.push_back(device_.CreateRenderPipeline(&descriptor));
+  }
+}
+
+Pipeline_Base::Pipeline_Base(const wgpu::Device& device,
+                             wgpu::TextureFormat target)
+    : RenderPipelineBase(device) {
+  wgpu::BindGroupLayoutEntry entries[3];
+  entries[0].binding = 0;
+  entries[0].visibility = wgpu::ShaderStage::Vertex;
+  entries[0].buffer.type = wgpu::BufferBindingType::Uniform;
+
+  entries[1].binding = 1;
+  entries[1].visibility = wgpu::ShaderStage::Fragment;
+  entries[1].texture.sampleType = wgpu::TextureSampleType::Float;
+  entries[1].texture.viewDimension = wgpu::TextureViewDimension::e2D;
+
+  entries[2].binding = 2;
+  entries[2].visibility = wgpu::ShaderStage::Fragment;
+  entries[2].sampler.type = wgpu::SamplerBindingType::Filtering;
+
+  wgpu::BindGroupLayoutDescriptor binding_desc;
+  binding_desc.entryCount = _countof(entries);
+  binding_desc.entries = entries;
+  wgpu::BindGroupLayout binding = device.CreateBindGroupLayout(&binding_desc);
+
+  BuildPipeline(kBaseRenderWGSL, "vertexMain", "fragmentMain",
+                {
+                    VertexType::GetLayout(),
+                },
+                {
+                    binding,
+                },
+                target);
+}
+
+Pipeline_Color::Pipeline_Color(const wgpu::Device& device,
+                               wgpu::TextureFormat target)
+    : RenderPipelineBase(device) {
+  wgpu::BindGroupLayoutEntry entries[1];
+  entries[0].binding = 0;
+  entries[0].visibility = wgpu::ShaderStage::Vertex;
+  entries[0].buffer.type = wgpu::BufferBindingType::Uniform;
+
+  wgpu::BindGroupLayoutDescriptor binding_desc;
+  binding_desc.entryCount = _countof(entries);
+  binding_desc.entries = entries;
+  wgpu::BindGroupLayout binding = device.CreateBindGroupLayout(&binding_desc);
+
+  BuildPipeline(kColorRenderWGSL, "vertexMain", "fragmentMain",
+                {
+                    VertexType::GetLayout(),
+                },
+                {
+                    binding,
+                },
+                target);
 }
 
 }  // namespace renderer

@@ -27,7 +27,9 @@ class URGE_RUNTIME_API Table : public virtual base::RefCounted<Table> {
                                   ExceptionState& exception_state);
 
   /*--urge()--*/
-  static scoped_refptr<Table> Copy(scoped_refptr<Table> other);
+  static scoped_refptr<Table> Copy(ExecutionContext* execution_context,
+                                   scoped_refptr<Table> other,
+                                   ExceptionState& exception_state);
 
   /*--urge()--*/
   URGE_EXPORT_SERIALIZABLE(Table);

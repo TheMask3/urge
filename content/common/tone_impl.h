@@ -19,6 +19,8 @@ class ToneImpl : public Tone, public ValueNotification {
   ToneImpl(const ToneImpl& other);
   ~ToneImpl() override = default;
 
+  ToneImpl& operator=(const ToneImpl& other);
+
   static scoped_refptr<ToneImpl> From(scoped_refptr<Tone> host);
 
   void Set(float red,

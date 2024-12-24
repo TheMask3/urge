@@ -13,25 +13,24 @@ namespace {
 void DeviceLostErrorHandler(const wgpu::Device&,
                             wgpu::DeviceLostReason reason,
                             wgpu::StringView message) {
-  const char* reasonName = "";
+  std::string reason_name;
   switch (reason) {
+    default:
     case wgpu::DeviceLostReason::Unknown:
-      reasonName = "Unknown";
+      reason_name = "Unknown";
       break;
     case wgpu::DeviceLostReason::Destroyed:
-      reasonName = "Destroyed";
+      reason_name = "Destroyed";
       break;
     case wgpu::DeviceLostReason::InstanceDropped:
-      reasonName = "InstanceDropped";
+      reason_name = "InstanceDropped";
       break;
     case wgpu::DeviceLostReason::FailedCreation:
-      reasonName = "FailedCreation";
-      break;
-    default:
+      reason_name = "FailedCreation";
       break;
   }
 
-  LOG(INFO) << "[Renderer] Device lost - Error: " << reasonName << ": "
+  LOG(INFO) << "[Renderer] Device lost - Error: " << reason_name << ": "
             << std::string_view(message);
 }
 
@@ -95,7 +94,8 @@ std::unique_ptr<RenderDevice> RenderDevice::Create(
 
   wgpu::AdapterInfo info;
   adapter.GetInfo(&info);
-  LOG(INFO) << "[Renderer] Adapter: " << std::string_view(info.device);
+  LOG(INFO) << "[Renderer] Renderer Device: " << std::string_view(info.device);
+  LOG(INFO) << "[Renderer] Description: " << std::string_view(info.description);
 
   wgpu::DeviceDescriptor device_desc = {};
   device_desc.SetUncapturedErrorCallback(UncaptureErrorHandler);

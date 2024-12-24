@@ -16,18 +16,28 @@ namespace content {
 scoped_refptr<Bitmap> Bitmap::New(ExecutionContext* execution_context,
                                   const std::string& filename,
                                   ExceptionState& exception_state) {
-  return scoped_refptr<Bitmap>();
+  return new CanvasImpl(, );
 }
 
 scoped_refptr<Bitmap> Bitmap::New(ExecutionContext* execution_context,
                                   uint32_t width,
                                   uint32_t height,
                                   ExceptionState& exception_state) {
-  return scoped_refptr<Bitmap>();
+  wgpu::TextureDescriptor tex_desc;
+
+  return new CanvasImpl(, );
 }
 
-scoped_refptr<Bitmap> Bitmap::Copy(scoped_refptr<Bitmap> other) {
-  return scoped_refptr<Bitmap>();
+scoped_refptr<Bitmap> Bitmap::Copy(ExecutionContext* execution_context,
+                                   scoped_refptr<Bitmap> other,
+                                   ExceptionState& exception_state) {
+  scoped_refptr<Bitmap> duplicate_bitmap =
+      Bitmap::New(execution_context, other->Width(exception_state),
+                  other->Height(exception_state), exception_state);
+  duplicate_bitmap->Blt(0, 0, other, other->GetRect(exception_state), 255,
+                        exception_state);
+
+  return duplicate_bitmap;
 }
 
 scoped_refptr<Bitmap> Bitmap::Deserialize(const std::string&,
@@ -59,6 +69,8 @@ SDL_Surface* CanvasImpl::RequireMemorySurface() {
 
 void CanvasImpl::SubmitQueuedCommands(const wgpu::CommandEncoder& encoder) {
   Command* command_sequence = nullptr;
+  // Execute pending commands,
+  // encode draw command in wgpu encoder.
   while (command_sequence) {
     switch (command_sequence->id) {
       case CommandID::kFillRect:
@@ -79,9 +91,15 @@ void CanvasImpl::SubmitQueuedCommands(const wgpu::CommandEncoder& encoder) {
 
     command_sequence = command_sequence->next;
   }
+
+  // Clear command pool,
+  // no memory release.
+  ClearPendingCommands();
 }
 
 void CanvasImpl::Dispose(ExceptionState& exception_state) {
+  base::LinkNode<CanvasImpl>::RemoveFromList();
+
   if (!IsDisposed(exception_state)) {
     canvas_texture_.Destroy();
     canvas_texture_ = nullptr;
@@ -333,7 +351,10 @@ bool CanvasImpl::CheckDisposed(ExceptionState& exception_state) {
 
 void CanvasImpl::BlitTextureInternal(const base::Rect& dst_rect,
                                      const wgpu::Texture& src_texture,
-                                     const base::Rect& src_rect) {}
+                                     const base::Rect& src_rect) {
+  // Synchronize pending queue immediately,
+  // blit the sourcetexture to destination texture immediately.
+}
 
 scoped_refptr<Font> CanvasImpl::Get_Font(ExceptionState& exception_state) {
   if (CheckDisposed(exception_state))

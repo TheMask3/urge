@@ -13,7 +13,9 @@ scoped_refptr<Table> Table::New(uint32_t xsize,
   return new TableImpl(xsize, ysize, zsize);
 }
 
-scoped_refptr<Table> Table::Copy(scoped_refptr<Table> other) {
+scoped_refptr<Table> Table::Copy(ExecutionContext* execution_context,
+                                 scoped_refptr<Table> other,
+                                 ExceptionState& exception_state) {
   return new TableImpl(*static_cast<TableImpl*>(other.get()));
 }
 

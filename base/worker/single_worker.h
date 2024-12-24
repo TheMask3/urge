@@ -58,7 +58,7 @@ class SingleWorker {
 
   WorkerScheduler* scheduler_;
   WorkerScheduleMode mode_;
-  moodycamel::BlockingConcurrentQueue<WorkerTaskTraits> task_queue_;
+  moodycamel::ConcurrentQueue<WorkerTaskTraits> task_queue_;
 };
 
 }  // namespace base

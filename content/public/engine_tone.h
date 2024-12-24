@@ -30,7 +30,9 @@ class URGE_RUNTIME_API Tone : public virtual base::RefCounted<Tone> {
                                  float gray,
                                  ExceptionState& exception_state);
 
-  static scoped_refptr<Tone> Copy(scoped_refptr<Tone> other);
+  static scoped_refptr<Tone> Copy(ExecutionContext* execution_context,
+                                  scoped_refptr<Tone> other,
+                                  ExceptionState& exception_state);
 
   /*--urge()--*/
   URGE_EXPORT_SERIALIZABLE(Tone);

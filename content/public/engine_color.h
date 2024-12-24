@@ -31,7 +31,9 @@ class URGE_RUNTIME_API Color : public virtual base::RefCounted<Color> {
                                   ExceptionState& exception_state);
 
   /*--urge()--*/
-  static scoped_refptr<Color> Copy(scoped_refptr<Color> other);
+  static scoped_refptr<Color> Copy(ExecutionContext* execution_context,
+                                   scoped_refptr<Color> other,
+                                   ExceptionState& exception_state);
 
   /*--urge()--*/
   URGE_EXPORT_SERIALIZABLE(Color);

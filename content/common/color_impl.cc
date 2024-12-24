@@ -20,7 +20,9 @@ scoped_refptr<Color> Color::New(float red,
   return new ColorImpl(base::Vec4(red, green, blue, gray));
 }
 
-scoped_refptr<Color> Color::Copy(scoped_refptr<Color> other) {
+scoped_refptr<Color> Color::Copy(ExecutionContext* execution_context,
+                                 scoped_refptr<Color> other,
+                                 ExceptionState& exception_state) {
   return new ColorImpl(*static_cast<ColorImpl*>(other.get()));
 }
 
@@ -48,6 +50,12 @@ ColorImpl::ColorImpl(const base::Vec4& value) : value_(value), dirty_(true) {
 
 ColorImpl::ColorImpl(const ColorImpl& other)
     : value_(other.value_), dirty_(true) {}
+
+ColorImpl& ColorImpl::operator=(const ColorImpl& other) {
+  value_ = other.value_;
+  dirty_ = other.dirty_;
+  return *this;
+}
 
 scoped_refptr<ColorImpl> ColorImpl::From(scoped_refptr<Color> host) {
   return static_cast<ColorImpl*>(host.get());

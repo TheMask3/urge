@@ -18,7 +18,9 @@ scoped_refptr<Rect> Rect::New(int32_t x,
   return new RectImpl(base::Rect(x, y, width, height));
 }
 
-scoped_refptr<Rect> Rect::Copy(scoped_refptr<Rect> other) {
+scoped_refptr<Rect> Rect::Copy(ExecutionContext* execution_context,
+                               scoped_refptr<Rect> other,
+                               ExceptionState& exception_state) {
   return new RectImpl(*static_cast<RectImpl*>(other.get()));
 }
 
@@ -40,6 +42,11 @@ std::string Rect::Serialize(scoped_refptr<Rect> value,
 RectImpl::RectImpl(const base::Rect& rect) : rect_(rect) {}
 
 RectImpl::RectImpl(const RectImpl& other) : rect_(other.rect_) {}
+
+RectImpl& RectImpl::operator=(const RectImpl& other) {
+  rect_ = other.rect_;
+  return *this;
+}
 
 scoped_refptr<RectImpl> RectImpl::From(scoped_refptr<Rect> host) {
   return static_cast<RectImpl*>(host.get());

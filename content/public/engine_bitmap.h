@@ -35,7 +35,9 @@ class URGE_RUNTIME_API Bitmap : public virtual base::RefCounted<Bitmap> {
                                    ExceptionState& exception_state);
 
   /*--urge()--*/
-  static scoped_refptr<Bitmap> Copy(scoped_refptr<Bitmap> other);
+  static scoped_refptr<Bitmap> Copy(ExecutionContext* execution_context,
+                                    scoped_refptr<Bitmap> other,
+                                    ExceptionState& exception_state);
 
   /*--urge()--*/
   URGE_EXPORT_SERIALIZABLE(Bitmap);

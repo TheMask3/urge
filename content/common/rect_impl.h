@@ -17,6 +17,8 @@ class RectImpl : public Rect, public ValueNotification {
   RectImpl(const RectImpl& other);
   ~RectImpl() override = default;
 
+  RectImpl& operator=(const RectImpl& other);
+
   static scoped_refptr<RectImpl> From(scoped_refptr<Rect> host);
 
   void Set(int32_t x,

@@ -21,6 +21,8 @@ class ColorImpl : public Color, public ValueNotification {
   ColorImpl(const ColorImpl& other);
   ~ColorImpl() override = default;
 
+  ColorImpl& operator=(const ColorImpl& other);
+
   static scoped_refptr<ColorImpl> From(scoped_refptr<Color> host);
 
   void Set(float red,

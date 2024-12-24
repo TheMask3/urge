@@ -30,7 +30,9 @@ class URGE_RUNTIME_API Font : public virtual base::RefCounted<Font> {
                                  ExceptionState& exception_state);
 
   /*--urge()--*/
-  static scoped_refptr<Font> Copy(scoped_refptr<Font> other);
+  static scoped_refptr<Font> Copy(ExecutionContext* execution_context,
+                                  scoped_refptr<Font> other,
+                                  ExceptionState& exception_state);
 
   /*--urge()--*/
   static bool IsExisted(ExecutionContext* execution_context,

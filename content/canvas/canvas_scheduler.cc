@@ -26,6 +26,18 @@ void CanvasScheduler::BindRenderWorker(base::SingleWorker* worker) {
   render_worker_ = worker;
 }
 
+void CanvasScheduler::AttachChildCanvas(CanvasImpl* child) {
+  children_.Append(child);
+}
+
+void CanvasScheduler::SubmitPendingPaintCommands(
+    const wgpu::CommandEncoder& encoder) {
+  for (auto it = children_.head(); it != children_.end(); it = it->next()) {
+    // Submit all pending commands (except Blt, StretchBlt)
+    it->value()->SubmitQueuedCommands(encoder);
+  }
+}
+
 CanvasScheduler::CanvasScheduler(renderer::RenderDevice* device,
                                  renderer::DeviceContext* context)
     : logic_device_(device),
