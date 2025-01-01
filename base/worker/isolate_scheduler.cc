@@ -1,4 +1,4 @@
-// Copyright 2024 Admenri.
+// Copyright 2018-2025 Admenri.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -40,7 +40,7 @@ void WorkerScheduler::Flush() {
 void WorkerScheduler::FiberRunnerInternal(fiber_t* coroutine) {
   auto* worker = static_cast<SingleWorker*>(coroutine->userdata);
   while (!worker->scheduler_->quit_flag_) {
-    worker->Flush();
+    worker->FlushInternal();
 
     // Return to main fiber
     fiber_switch(worker->scheduler_->primary_coroutine_);
@@ -49,7 +49,7 @@ void WorkerScheduler::FiberRunnerInternal(fiber_t* coroutine) {
 
 void WorkerScheduler::ThreadRunnerInternal(SingleWorker* worker) {
   while (!worker->scheduler_->quit_flag_)
-    worker->Flush();
+    worker->FlushInternal();
 }
 
 }  // namespace base

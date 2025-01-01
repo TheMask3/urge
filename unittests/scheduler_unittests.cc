@@ -16,11 +16,15 @@ int SDL_main(int argc, char* argv[]) {
   std::unique_ptr<base::SingleWorker> thread_worker =
       base::SingleWorker::CreateWorker(base::WorkerScheduleMode::kAsync);
 
+  scheduler->AddChildWorker(std::move(fiber_worker));
+  scheduler->AddChildWorker(std::move(fiber_worker2));
+  scheduler->AddChildWorker(std::move(thread_worker));
+
   fiber_worker->SendTask(base::BindOnce([](base::SingleWorker* worker) {
     LOG(INFO) << "Fiber worker task 1";
     while (true) {
       LOG(INFO) << "Fiber loop task - node 1";
-      worker->YieldFiber();
+      worker->YieldCurrent();
     }
   }));
 
@@ -34,14 +38,10 @@ int SDL_main(int argc, char* argv[]) {
                 std::this_thread::sleep_for(std::chrono::seconds(3));
               }));
 
-          worker->YieldFiber();
+          worker->YieldCurrent();
         }
       },
       thread_worker.get()));
-
-  scheduler->AddChildWorker(std::move(fiber_worker));
-  scheduler->AddChildWorker(std::move(fiber_worker2));
-  scheduler->AddChildWorker(std::move(thread_worker));
 
   while (true) {
     scheduler->Flush();

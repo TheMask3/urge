@@ -1,9 +1,10 @@
-// Copyright 2024 Admenri.
+// Copyright 2018-2025 Admenri.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "content/canvas/canvas_impl.h"
 
+#include "MemoryPool/MemoryPool.h"
 #include "SDL3_ttf/SDL_ttf.h"
 
 #include "content/canvas/canvas_scheduler.h"
@@ -12,6 +13,12 @@
 #include "content/common/rect_impl.h"
 
 namespace content {
+
+namespace {
+
+MemoryPool<TextureAgent> g_textures_pool;
+
+}  // namespace
 
 scoped_refptr<Bitmap> Bitmap::New(ExecutionContext* execution_context,
                                   const std::string& filename,
@@ -66,6 +73,8 @@ SDL_Surface* CanvasImpl::RequireMemorySurface() {
 
   return nullptr;
 }
+
+void CanvasImpl::UpdateVideoMemory() {}
 
 void CanvasImpl::SubmitQueuedCommands(const wgpu::CommandEncoder& encoder) {
   Command* command_sequence = nullptr;
@@ -367,6 +376,19 @@ void CanvasImpl::Put_Font(const scoped_refptr<Font>& value,
   if (CheckDisposed(exception_state))
     return;
   font_ = value;
+}
+
+TextureAgent* TextureAgent::Allocate(size_t n) {
+  TextureAgent* agents = g_textures_pool.allocate(n);
+  for (int i = 0; i < n; ++i)
+    g_textures_pool.construct(agents + i);
+  return agents;
+}
+
+void TextureAgent::Free(TextureAgent* ptr, size_t n) {
+  for (int i = 0; i < n; ++i)
+    g_textures_pool.destroy(ptr + i);
+  g_textures_pool.deallocate(ptr, n);
 }
 
 }  // namespace content

@@ -1,4 +1,4 @@
-// Copyright 2024 Admenri.
+// Copyright 2018-2025 Admenri.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -41,9 +41,6 @@ class SingleWorker {
   // Post a semaphore flag in queue, blocking caller thread for synchronization.
   bool WaitWorkerSynchronize();
 
-  // Flush worker running.
-  void Flush();
-
   // Return worker scheduler mode.
   WorkerScheduleMode GetSchedulerMode() { return mode_; }
 
@@ -53,8 +50,8 @@ class SingleWorker {
 
  private:
   friend class WorkerScheduler;
-  friend class std::unique_ptr<SingleWorker>;
   SingleWorker(WorkerScheduleMode mode);
+  void FlushInternal();
 
   WorkerScheduler* scheduler_;
   WorkerScheduleMode mode_;

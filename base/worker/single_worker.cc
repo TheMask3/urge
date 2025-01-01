@@ -1,4 +1,4 @@
-// Copyright 2024 Admenri.
+// Copyright 2018-2025 Admenri.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -34,7 +34,7 @@ bool SingleWorker::WaitWorkerSynchronize() {
   return semaphore.tryWait();
 }
 
-void SingleWorker::Flush() {
+void SingleWorker::FlushInternal() {
   WorkerTaskTraits queued_task;
   if (!task_queue_.try_dequeue(queued_task) &&
       mode_ == WorkerScheduleMode::kAsync)

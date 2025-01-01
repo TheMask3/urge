@@ -1,4 +1,4 @@
-// Copyright 2024 Admenri.
+// Copyright 2018-2025 Admenri.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -20,6 +20,15 @@ class CanvasScheduler;
 
 constexpr int32_t kBlockMaxSize = 4096;
 
+// Pooling object texture agent,
+// used for async thread task runner.
+struct TextureAgent {
+  wgpu::Texture data;
+
+  static TextureAgent* Allocate(size_t n = 1);
+  static void Free(TextureAgent* ptr, size_t n = 1);
+};
+
 class CanvasImpl : public Bitmap, public base::LinkNode<CanvasImpl> {
  public:
   CanvasImpl(wgpu::Texture canvas_texture, CanvasScheduler* scheduler);
@@ -31,6 +40,9 @@ class CanvasImpl : public Bitmap, public base::LinkNode<CanvasImpl> {
   // Synchronize pending commands and fetch texture to buffer.
   // Read buffer for surface pixels data.
   SDL_Surface* RequireMemorySurface();
+
+  // Update memory surface to GPU.
+  void UpdateVideoMemory();
 
   // Process queued pending commands.
   void SubmitQueuedCommands(const wgpu::CommandEncoder& encoder);
