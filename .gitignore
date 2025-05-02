@@ -1,7 +1,7 @@
 ﻿/.vs
 /.idea
 /build
-/out/build
+/out
 /app/android-project/.gradle
 /app/android-project/.idea
 /app/android-project/build
