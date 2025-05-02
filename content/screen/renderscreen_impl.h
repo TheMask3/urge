@@ -83,6 +83,11 @@ class RenderScreenImpl : public Graphics, public DisposableCollection {
   // This function will wait for delta time to clamp fps.
   void PresentScreenBuffer(Diligent::ImGuiDiligentRenderer* gui_renderer);
 
+  // Hungup rendering context if system enter background,
+  // only calling on Android system
+  void SuspendRenderingContext();
+  void ResumeRenderingContext();
+
   void CreateButtonGUISettings();
 
   DrawNodeController* GetDrawableController() { return &controller_; }
@@ -109,6 +114,8 @@ class RenderScreenImpl : public Graphics, public DisposableCollection {
 
   void PostTask(base::OnceClosure task);
   void WaitWorkerSynchronize();
+
+  bool AllowBackgroundRunning() const { return background_running_; }
 
  public:
   void Update(ExceptionState& exception_state) override;
@@ -179,6 +186,7 @@ class RenderScreenImpl : public Graphics, public DisposableCollection {
   bool keep_ratio_;
   bool smooth_scale_;
   bool allow_skip_frame_;
+  bool background_running_;
 };
 
 }  // namespace content
