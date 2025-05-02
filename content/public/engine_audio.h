@@ -67,10 +67,11 @@ class URGE_RUNTIME_API Audio : public base::RefCounted<Audio> {
   /*--urge(name:me_fade)--*/
   virtual void MEFade(int32_t time, ExceptionState& exception_state) = 0;
 
-  /*--urge(name:se_play,optional:volume=80,optional:pitch=100)--*/
+  /*--urge(name:se_play,optional:volume=80,optional:pitch=100,optional:pan=0)--*/
   virtual void SEPlay(const std::string& filename,
                       int32_t volume,
                       int32_t pitch,
+                      int32_t pan,
                       ExceptionState& exception_state) = 0;
 
   /*--urge(name:se_stop)--*/

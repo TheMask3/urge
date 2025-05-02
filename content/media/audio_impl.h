@@ -67,6 +67,7 @@ class AudioImpl : public Audio {
   void SEPlay(const std::string& filename,
               int32_t volume,
               int32_t pitch,
+              int32_t pan,
               ExceptionState& exception_state) override;
   void SEStop(ExceptionState& exception_state) override;
 
@@ -95,7 +96,8 @@ class AudioImpl : public Audio {
 
   void EmitSoundInternal(const std::string& filename,
                          int32_t volume = 100,
-                         int32_t pitch = 100);
+                         int32_t pitch = 100,
+                         int32_t pan = 0);
   void StopEmitInternal();
 
   void ResetInternal();

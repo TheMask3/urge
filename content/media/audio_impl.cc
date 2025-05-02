@@ -290,6 +290,7 @@ void AudioImpl::MEFade(int32_t time, ExceptionState& exception_state) {
 void AudioImpl::SEPlay(const std::string& filename,
                        int32_t volume,
                        int32_t pitch,
+                       int32_t pan,
                        ExceptionState& exception_state) {
   if (!output_device_)
     return;
@@ -297,7 +298,7 @@ void AudioImpl::SEPlay(const std::string& filename,
   base::ThreadWorker::PostTask(
       audio_runner_.get(),
       base::BindOnce(&AudioImpl ::EmitSoundInternal, base::Unretained(this),
-                     filename, volume, pitch));
+                     filename, volume, pitch, pan));
 }
 
 void AudioImpl::SEStop(ExceptionState& exception_state) {
@@ -425,7 +426,8 @@ void AudioImpl::GetSlotPosInternal(SlotInfo* slot, double* out) {
 
 void AudioImpl::EmitSoundInternal(const std::string& filename,
                                   int32_t volume,
-                                  int32_t pitch) {
+                                  int32_t pitch,
+                                  int32_t pan) {
   auto cache = se_cache_.find(filename);
   if (cache != se_cache_.end()) {
     if (se_queue_.size() >= MAX_CHANNELS / 2 - 4) {
@@ -438,6 +440,7 @@ void AudioImpl::EmitSoundInternal(const std::string& filename,
     auto handle = core_.play(*cache->second);
     core_.setVolume(handle, volume / 100.0f);
     core_.setRelativePlaySpeed(handle, pitch / 100.0f);
+    core_.setPan(handle, pan / 100.0f);
     se_queue_.push(handle);
   } else {
     // Load from filesystem
@@ -470,6 +473,7 @@ void AudioImpl::EmitSoundInternal(const std::string& filename,
     auto handle = core_.play(*source);
     core_.setVolume(handle, volume / 100.0f);
     core_.setRelativePlaySpeed(handle, pitch / 100.0f);
+    core_.setPan(handle, pan / 100.0f);
     se_cache_.emplace(filename, std::move(source));
     se_queue_.push(handle);
   }
