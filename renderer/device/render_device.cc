@@ -123,6 +123,8 @@ std::unique_ptr<RenderDevice> RenderDevice::Create(
 
   native_window.pAWindow = SDL_GetPointerProperty(
       window_properties, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, nullptr);
+#else
+#error "unsupport platform selected."
 #endif
 
   Diligent::RefCntAutoPtr<Diligent::IRenderDevice> device;
@@ -135,6 +137,10 @@ std::unique_ptr<RenderDevice> RenderDevice::Create(
 #if D3D11_SUPPORTED || D3D12_SUPPORTED
   Diligent::FullScreenModeDesc fullscreen_mode_desc;
 #endif
+
+  swap_chain_desc.ColorBufferFormat = Diligent::TEX_FORMAT_RGBA8_UNORM;
+  swap_chain_desc.PreTransform = Diligent::SURFACE_TRANSFORM_OPTIMAL;
+  swap_chain_desc.IsPrimary = Diligent::True;
 
 // Initialize specific graphics api
 #if GL_SUPPORTED || GLES_SUPPORTED
