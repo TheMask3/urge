@@ -104,12 +104,9 @@ void GPUCreateGraphicsHostInternal(RenderGraphicsAgent* agent,
   agent->effect_quads = renderer::QuadBatch::Make(**agent->device);
 
   // Create generic shader binding
-  agent->transition_binding_alpha =
-      pipelines->alphatrans.CreateBinding<renderer::Binding_AlphaTrans>();
-  agent->transition_binding_vague =
-      pipelines->mappedtrans.CreateBinding<renderer::Binding_VagueTrans>();
-  agent->effect_binding =
-      pipelines->color.CreateBinding<renderer::Binding_Color>();
+  agent->transition_binding_alpha = pipelines->alphatrans.CreateBinding();
+  agent->transition_binding_vague = pipelines->mappedtrans.CreateBinding();
+  agent->effect_binding = pipelines->color.CreateBinding();
 
   // If the swap chain color buffer format is a non-sRGB UNORM format,
   // we need to manually convert pixel shader output to gamma space.
@@ -151,7 +148,8 @@ void GPUPresentScreenBufferInternal(
     const base::Rect& display_viewport,
     const base::Vec2i& resolution,
     Diligent::ImGuiDiligentRenderer* gui_renderer,
-    bool smooth) {
+    bool smooth,
+    uint32_t vsync) {
   // Initial device attribute
   Diligent::IDeviceContext* context = agent->device->GetContext();
   Diligent::ISwapChain* swapchain = agent->device->GetSwapchain();
@@ -166,7 +164,7 @@ void GPUPresentScreenBufferInternal(
   std::unique_ptr<renderer::QuadBatch> present_quads =
       renderer::QuadBatch::Make(**agent->device);
   std::unique_ptr<renderer::Binding_Base> present_binding =
-      pipeline_set.CreateBinding<renderer::Binding_Base>();
+      pipeline_set.CreateBinding();
   RRefPtr<Diligent::IBuffer> present_uniform;
   RRefPtr<Diligent::ISampler> present_sampler;
 
@@ -251,12 +249,11 @@ void GPUPresentScreenBufferInternal(
   }
 
   // Render GUI if need
-  if (gui_renderer) {
+  if (gui_renderer)
     gui_renderer->RenderDrawData(context, ImGui::GetDrawData());
-  }
 
   // Flush command buffer and present GPU surface
-  swapchain->Present();
+  swapchain->Present(vsync);
 }
 
 void GPUFrameBeginRenderPassInternal(RenderGraphicsAgent* agent,
@@ -500,6 +497,7 @@ RenderScreenImpl::RenderScreenImpl(base::WeakPtr<ui::Widget> window,
       frozen_(false),
       resolution_(resolution),
       brightness_(255),
+      vsync_(1),
       frame_count_(0),
       frame_rate_(frame_rate),
       keep_ratio_(true),
@@ -540,7 +538,7 @@ void RenderScreenImpl::PresentScreenBuffer(
   base::ThreadWorker::PostTask(
       render_worker_,
       base::BindOnce(&GPUPresentScreenBufferInternal, agent_, display_viewport_,
-                     resolution_, gui_renderer, smooth_scale_));
+                     resolution_, gui_renderer, smooth_scale_, vsync_));
   base::ThreadWorker::WaitWorkerSynchronize(render_worker_);
 }
 
@@ -850,8 +848,8 @@ void RenderScreenImpl::Reset(ExceptionState& exception_state) {
 
 void RenderScreenImpl::PlayMovie(const std::string& filename,
                                  ExceptionState& exception_state) {
-  exception_state.ThrowContentError(ExceptionCode::CONTENT_ERROR,
-                                    "unimplement Graphics.play_movie");
+  exception_state.ThrowError(ExceptionCode::CONTENT_ERROR,
+                             "Unimplement: Graphics.play_movie");
 }
 
 void RenderScreenImpl::MoveWindow(int32_t x,
@@ -910,6 +908,15 @@ uint32_t RenderScreenImpl::Get_Brightness(ExceptionState& exception_state) {
 void RenderScreenImpl::Put_Brightness(const uint32_t& value,
                                       ExceptionState& exception_state) {
   brightness_ = std::clamp<uint32_t>(value, 0, 255);
+}
+
+uint32_t RenderScreenImpl::Get_VSync(ExceptionState& exception_state) {
+  return vsync_;
+}
+
+void RenderScreenImpl::Put_VSync(const uint32_t& value,
+                                 ExceptionState& exception_state) {
+  vsync_ = std::clamp<uint32_t>(value, 0, 255);
 }
 
 bool RenderScreenImpl::Get_Fullscreen(ExceptionState& exception_state) {

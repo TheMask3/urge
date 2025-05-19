@@ -2,11 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <filesystem>
+
 #include "SDL3/SDL_main.h"
 #include "SDL3/SDL_messagebox.h"
 #include "SDL3/SDL_stdinc.h"
 #include "SDL3_image/SDL_image.h"
 #include "SDL3_ttf/SDL_ttf.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 #include "binding/mri/mri_main.h"
 #include "components/filesystem/io_service.h"
@@ -19,16 +23,7 @@
 #include <jni.h>
 #include <sys/system_properties.h>
 #include <unistd.h>
-#include <filesystem>
 #endif
-
-#if defined(OS_WIN)
-#include <windows.h>
-extern "C" {
-__declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-}
-#endif  //! OS_WIN
 
 int main(int argc, char* argv[]) {
 #if defined(OS_WIN)
@@ -53,8 +48,6 @@ int main(int argc, char* argv[]) {
     std::filesystem::create_directories(std_path);
 
   std::filesystem::current_path(std_path);
-  if (std::filesystem::equivalent(std::filesystem::current_path(), std_path))
-    LOG(INFO) << "[Android] Base directory: " << game_data_dir;
 
   env->ReleaseStringUTFChars(java_string_game_path, game_data_dir);
   env->DeleteLocalRef(java_string_game_path);
@@ -73,25 +66,45 @@ int main(int argc, char* argv[]) {
   if (last_sep != std::string::npos)
     app = app.substr(last_sep + 1);
 
-  LOG(INFO) << "[App] Path: " << app;
-
   last_sep = app.find_last_of('.');
   if (last_sep != std::string::npos)
     app = app.substr(0, last_sep);
   std::string ini = app + ".ini";
 #endif  //! defined(OS_ANDROID)
 
-  LOG(INFO) << "[App] Configure: " << ini;
+  auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+  console_sink->set_pattern("[%^%l%$] %v");
+
+  auto file_sink =
+      std::make_shared<spdlog::sinks::basic_file_sink_mt>(app + ".log", true);
+  file_sink->set_level(spdlog::level::trace);
+
+  spdlog::logger logger_sink("urgecore", {console_sink, file_sink});
+  base::logging::InitWithLogger(&logger_sink);
+
+  std::string current_path = std::filesystem::current_path().generic_u8string();
+
+  LOG(INFO) << "[App] Current Path: " << current_path;
+  LOG(INFO) << "[App] Configure File: " << ini;
 
   // Initialize filesystem
   std::unique_ptr<filesystem::IOService> io_service =
       std::make_unique<filesystem::IOService>(argv[0]);
-  io_service->AddLoadPath(".");
+  io_service->AddLoadPath(current_path, "", false);
+  io_service->SetWritePath(current_path);
 
   filesystem::IOState io_state;
   SDL_IOStream* inifile = io_service->OpenReadRaw(ini, &io_state);
   if (io_state.error_count) {
-    LOG(INFO) << "[App] Warning: " << io_state.error_message;
+    std::string error_info = "Failed to load configure: ";
+    error_info += ini;
+    error_info += '\n';
+    error_info += "Current path: ";
+    error_info += current_path;
+
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "URGE", error_info.c_str(),
+                             nullptr);
+    return 1;
   }
 
   // Initialize profile
@@ -107,7 +120,9 @@ int main(int argc, char* argv[]) {
 
   // Setup encryption resource package
   std::string app_package = app + ".arb";
-  io_service->AddLoadPath(app_package);
+  if (io_service->AddLoadPath(app_package, "", false))
+    LOG(INFO) << "[IOService] Encrypto pack \"" << app_package
+              << "\" was added.";
 
   // Disable IME on Windows
 #if defined(OS_WIN)

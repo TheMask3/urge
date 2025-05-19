@@ -12,14 +12,6 @@ EventController::EventController(base::WeakPtr<ui::Widget> window)
 EventController::~EventController() = default;
 
 void EventController::DispatchEvent(SDL_Event* event) {
-  // Clear queue if update new frame
-  if (!event) {
-    key_events_.clear();
-    mouse_events_.clear();
-    touch_events_.clear();
-    return;
-  }
-
   // Dispatch event with filter
   auto window_size = window_->GetSize();
   auto window_scale = window_->GetDisplayState().scale;
@@ -29,7 +21,7 @@ void EventController::DispatchEvent(SDL_Event* event) {
     case SDL_EVENT_KEY_UP:
       if (event->key.windowID == window_->GetWindowID()) {
         auto& raw_event = event->key;
-        KeyEvent out_event = {};
+        KeyEventData out_event = {};
         out_event.timestamp = raw_event.timestamp;
         out_event.keyboard_id = raw_event.which;
         out_event.type = static_cast<decltype(out_event.type)>(
@@ -45,7 +37,7 @@ void EventController::DispatchEvent(SDL_Event* event) {
     case SDL_EVENT_MOUSE_MOTION:
       if (event->motion.windowID == window_->GetWindowID()) {
         auto& raw_event = event->motion;
-        MouseEvent out_event = {};
+        MouseEventData out_event = {};
         out_event.timestamp = raw_event.timestamp;
         out_event.mouse_id = raw_event.which;
         out_event.type = static_cast<decltype(out_event.type)>(
@@ -63,7 +55,7 @@ void EventController::DispatchEvent(SDL_Event* event) {
     case SDL_EVENT_MOUSE_BUTTON_UP:
       if (event->button.windowID == window_->GetWindowID()) {
         auto& raw_event = event->button;
-        MouseEvent out_event = {};
+        MouseEventData out_event = {};
         out_event.timestamp = raw_event.timestamp;
         out_event.mouse_id = raw_event.which;
         out_event.type = static_cast<decltype(out_event.type)>(
@@ -80,7 +72,7 @@ void EventController::DispatchEvent(SDL_Event* event) {
     case SDL_EVENT_MOUSE_WHEEL:
       if (event->wheel.windowID == window_->GetWindowID()) {
         auto& raw_event = event->wheel;
-        MouseEvent out_event = {};
+        MouseEventData out_event = {};
         out_event.timestamp = raw_event.timestamp;
         out_event.mouse_id = raw_event.which;
         out_event.type = static_cast<decltype(out_event.type)>(
@@ -88,7 +80,8 @@ void EventController::DispatchEvent(SDL_Event* event) {
         out_event.x = (raw_event.x - window_viewport.x) / window_scale.x;
         out_event.y = (raw_event.y - window_viewport.y) / window_scale.y;
 
-        out_event.wheel_dir = raw_event.direction;
+        out_event.wheel_dir =
+            static_cast<MouseEvent::WheelState>(raw_event.direction);
         out_event.wheel_x = raw_event.x;
         out_event.wheel_y = raw_event.y;
         mouse_events_.push_back(out_event);
@@ -100,7 +93,7 @@ void EventController::DispatchEvent(SDL_Event* event) {
     case SDL_EVENT_FINGER_CANCELED:
       if (event->tfinger.windowID == window_->GetWindowID()) {
         auto& raw_event = event->tfinger;
-        TouchEvent out_event = {};
+        TouchEventData out_event = {};
         out_event.timestamp = raw_event.timestamp;
         out_event.touch_id = raw_event.touchID;
         out_event.type = static_cast<decltype(out_event.type)>(
@@ -116,21 +109,35 @@ void EventController::DispatchEvent(SDL_Event* event) {
         touch_events_.push_back(out_event);
       }
       break;
+    case SDL_EVENT_TEXT_EDITING:
+      if (event->edit.windowID == window_->GetWindowID()) {
+        auto& raw_event = event->edit;
+        TextInputEventData out_event = {};
+        out_event.timestamp = raw_event.timestamp;
+        out_event.type = static_cast<decltype(out_event.type)>(
+            event->type - SDL_EVENT_TEXT_EDITING);
+        out_event.text = raw_event.text;
+        out_event.select_start = raw_event.start;
+        out_event.select_length = raw_event.length;
+        text_input_events_.push_back(out_event);
+      }
+      break;
+    case SDL_EVENT_TEXT_INPUT:
+      if (event->text.windowID == window_->GetWindowID()) {
+        auto& raw_event = event->text;
+        TextInputEventData out_event = {};
+        out_event.timestamp = raw_event.timestamp;
+        out_event.type = static_cast<decltype(out_event.type)>(
+            event->type - SDL_EVENT_TEXT_EDITING);
+        out_event.text = raw_event.text;
+        out_event.select_start = -1;
+        out_event.select_length = -1;
+        text_input_events_.push_back(out_event);
+      }
+      break;
     default:
       break;
   }
-}
-
-void EventController::PollKeyEvents(std::vector<KeyEvent>& out) {
-  out = key_events_;
-}
-
-void EventController::PollMouseEvents(std::vector<MouseEvent>& out) {
-  out = mouse_events_;
-}
-
-void EventController::PollTouchEvents(std::vector<TouchEvent>& out) {
-  out = touch_events_;
 }
 
 }  // namespace content

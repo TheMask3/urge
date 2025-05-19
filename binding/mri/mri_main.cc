@@ -19,14 +19,18 @@
 #include "binding/mri/autogen_display_binding.h"
 #include "binding/mri/autogen_font_binding.h"
 #include "binding/mri/autogen_graphics_binding.h"
+#include "binding/mri/autogen_imageanimation_binding.h"
 #include "binding/mri/autogen_input_binding.h"
+#include "binding/mri/autogen_iostream_binding.h"
 #include "binding/mri/autogen_keyevent_binding.h"
 #include "binding/mri/autogen_mouse_binding.h"
 #include "binding/mri/autogen_mouseevent_binding.h"
 #include "binding/mri/autogen_plane_binding.h"
 #include "binding/mri/autogen_rect_binding.h"
 #include "binding/mri/autogen_sprite_binding.h"
+#include "binding/mri/autogen_surface_binding.h"
 #include "binding/mri/autogen_table_binding.h"
+#include "binding/mri/autogen_textinputevent_binding.h"
 #include "binding/mri/autogen_tilemap2_binding.h"
 #include "binding/mri/autogen_tilemap_binding.h"
 #include "binding/mri/autogen_tilemapautotile_binding.h"
@@ -34,9 +38,14 @@
 #include "binding/mri/autogen_tone_binding.h"
 #include "binding/mri/autogen_touchevent_binding.h"
 #include "binding/mri/autogen_urge_binding.h"
+#include "binding/mri/autogen_videodecoder_binding.h"
 #include "binding/mri/autogen_viewport_binding.h"
 #include "binding/mri/autogen_window2_binding.h"
 #include "binding/mri/autogen_window_binding.h"
+
+#ifdef HAVE_GET_MACHINE_HASH
+#include "admenri/machineid/machineid.h"
+#endif
 
 extern "C" {
 void rb_call_builtin_inits();
@@ -150,6 +159,13 @@ MRI_METHOD(MRI_RGSSStop) {
   return Qnil;
 }
 
+#ifdef HAVE_GET_MACHINE_HASH
+MRI_METHOD(ADMENRI_getMachineHash) {
+  auto hash = admenri::GetMachineHash();
+  return rb_str_new(hash.data(), hash.size());
+}
+#endif
+
 }  // namespace
 
 BindingEngineMri::BindingEngineMri() : profile_(nullptr) {}
@@ -190,20 +206,25 @@ void BindingEngineMri::PreEarlyInitialization(
   InitDisplayBinding();
   InitFontBinding();
   InitGraphicsBinding();
+  InitImageAnimationBinding();
   InitInputBinding();
+  InitIOStreamBinding();
   InitKeyEventBinding();
   InitMouseBinding();
   InitMouseEventBinding();
   InitPlaneBinding();
   InitRectBinding();
   InitSpriteBinding();
+  InitSurfaceBinding();
   InitTableBinding();
+  InitTextInputEventBinding();
   InitTilemapBinding();
   InitTilemapAutotileBinding();
   InitTilemapBitmapBinding();
   InitTilemap2Binding();
   InitToneBinding();
   InitTouchEventBinding();
+  InitVideoDecoderBinding();
   InitViewportBinding();
   InitWindowBinding();
   InitWindow2Binding();
@@ -229,6 +250,12 @@ void BindingEngineMri::PreEarlyInitialization(
 
   MriDefineModuleFunction(rb_mKernel, "rgss_main", MRI_RGSSMain);
   MriDefineModuleFunction(rb_mKernel, "rgss_stop", MRI_RGSSStop);
+
+#ifdef HAVE_GET_MACHINE_HASH
+  VALUE class_admenri = rb_define_module("Admenri");
+  MriDefineModuleFunction(class_admenri, "get_machine_hash",
+                          ADMENRI_getMachineHash);
+#endif
 
   LOG(INFO) << "[Binding] CRuby Interpreter Version: " << RUBY_API_VERSION_CODE;
   LOG(INFO) << "[Binding] CRuby Interpreter Platform: " << RUBY_PLATFORM;

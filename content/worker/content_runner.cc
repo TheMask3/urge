@@ -50,7 +50,6 @@ ContentRunner::ContentRunner(ContentProfile* profile,
       binding_quit_flag_(0),
       binding_reset_flag_(0),
       background_running_(false),
-      handle_event_(true),
       disable_gui_input_(false),
       show_settings_menu_(false),
       show_fps_monitor_(false),
@@ -62,9 +61,9 @@ ContentRunner::ContentRunner(ContentProfile* profile,
       window, render_worker, profile, i18n_profile, io_service, font_context,
       profile->resolution, profile->frame_rate);
   keyboard_impl_ = new KeyboardControllerImpl(window, profile, i18n_profile);
-  audio_impl_ = new AudioImpl(io_service, i18n_profile);
+  audio_impl_ = new AudioImpl(profile, io_service, i18n_profile);
   mouse_impl_ = new MouseImpl(window);
-  engine_impl_ = new MiscSystem(window);
+  engine_impl_ = new MiscSystem(window, io_service);
 
   // Create event router
   event_controller_.reset(new EventController(window));
@@ -106,6 +105,7 @@ void ContentRunner::RunMainLoop() {
   execution_context.event_controller = event_controller_.get();
   execution_context.canvas_scheduler = graphics_impl_->GetCanvasScheduler();
   execution_context.graphics = graphics_impl_.get();
+  execution_context.io_service = io_service_;
 
   // Make module context
   EngineBindingBase::ScopedModuleContext module_context;
@@ -133,8 +133,8 @@ std::unique_ptr<ContentRunner> ContentRunner::Create(InitParams params) {
 void ContentRunner::TickHandlerInternal() {
   frame_count_++;
 
-  // Reset event controller
-  event_controller_->DispatchEvent(nullptr);
+  // Update fps
+  UpdateDisplayFPSInternal();
 
   // Poll event queue
   SDL_Event queued_event;
@@ -146,6 +146,9 @@ void ContentRunner::TickHandlerInternal() {
     // GUI event process
     if (!disable_gui_input_)
       ImGui_ImplSDL3_ProcessEvent(&queued_event);
+
+    // Render GUI if need
+    bool handle_event = !RenderGUIInternal();
 
     // Shortcut
     if (queued_event.type == SDL_EVENT_KEY_UP &&
@@ -160,21 +163,17 @@ void ContentRunner::TickHandlerInternal() {
     }
 
     // Widget event
-    if (handle_event_) {
+    if (handle_event) {
       window_->DispatchEvent(&queued_event);
       event_controller_->DispatchEvent(&queued_event);
     }
   }
 
   // Wait for background running block
-  while (background_running_)
+  while (background_running_) {
     SDL_WaitEvent(&queued_event);
-
-  // Update fps
-  UpdateDisplayFPSInternal();
-
-  // Render GUI if need
-  RenderGUIInternal();
+    event_controller_->DispatchEvent(&queued_event);
+  }
 
   // Present screen buffer
   graphics_impl_->PresentScreenBuffer(imgui_.get());
@@ -210,9 +209,10 @@ void ContentRunner::UpdateDisplayFPSInternal() {
   }
 }
 
-void ContentRunner::RenderGUIInternal() {
+bool ContentRunner::RenderGUIInternal() {
+  bool window_hovered = false;
+
   // Setup renderer new frame
-  handle_event_ = true;
   const Diligent::SwapChainDesc& swapchain_desc =
       graphics_impl_->GetDevice()->GetSwapchain()->GetDesc();
   imgui_->NewFrame(swapchain_desc.Width, swapchain_desc.Height,
@@ -226,7 +226,7 @@ void ContentRunner::RenderGUIInternal() {
 
   // Render settings menu
   if (show_settings_menu_)
-    RenderSettingsGUIInternal();
+    window_hovered |= RenderSettingsGUIInternal();
 
   // Render fps monitor
   if (show_fps_monitor_)
@@ -234,15 +234,18 @@ void ContentRunner::RenderGUIInternal() {
 
   // Final gui render
   ImGui::Render();
+
+  return window_hovered;
 }
 
-void ContentRunner::RenderSettingsGUIInternal() {
+bool ContentRunner::RenderSettingsGUIInternal() {
   ImGui::SetNextWindowPos(ImVec2(), ImGuiCond_FirstUseEver);
   ImGui::SetNextWindowSize(ImVec2(350, 400), ImGuiCond_FirstUseEver);
 
+  bool window_hovered = false;
   if (ImGui::Begin(i18n_profile_->GetI18NString(IDS_MENU_SETTINGS, "Settings")
                        .c_str())) {
-    handle_event_ = !ImGui::IsWindowFocused();
+    window_hovered = ImGui::IsWindowHovered();
 
     // Button settings
     disable_gui_input_ = keyboard_impl_->CreateButtonGUISettings();
@@ -259,6 +262,8 @@ void ContentRunner::RenderSettingsGUIInternal() {
 
   // End window create
   ImGui::End();
+
+  return window_hovered;
 }
 
 void ContentRunner::RenderFPSMonitorGUIInternal() {
@@ -269,6 +274,7 @@ void ContentRunner::RenderFPSMonitorGUIInternal() {
                          0.0f, FLT_MAX, ImVec2(300, 80));
   }
 
+  // End window render
   ImGui::End();
 }
 

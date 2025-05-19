@@ -23,9 +23,7 @@ void GPUCreateSpriteInternal(renderer::RenderDevice* device,
   agent->wave_cache.reserve(1 << 3);
 
   if (!device->GetPipelines()->sprite.storage_buffer_support) {
-    agent->single_binding =
-        device->GetPipelines()
-            ->sprite.CreateBinding<renderer::Binding_Sprite>();
+    agent->single_binding = device->GetPipelines()->sprite.CreateBinding();
     agent->single_vertex = renderer::QuadBatch::Make(**device, 1);
     Diligent::CreateUniformBuffer(
         **device, sizeof(renderer::Binding_Sprite::Params),
@@ -57,7 +55,7 @@ void GPUUpdateWaveSpriteInternal(
   auto emit_wave_block = [&](int32_t block_y, int32_t block_size) {
     float wave_offset =
         wave_phase + (static_cast<float>(block_y) / wave.length) * kPi;
-    float block_x = std::sin(wave_offset) * (wave.amp + 1.0f);
+    float block_x = std::sin(wave_offset) * wave.amp;
 
     base::Rect tex(src_rect.x, src_rect.y + block_y, src_rect.width,
                    block_size);
@@ -350,6 +348,8 @@ void SpriteImpl::Put_SrcRect(const scoped_refptr<Rect>& value,
                              ExceptionState& exception_state) {
   if (CheckDisposed(exception_state))
     return;
+
+  CHECK_ATTRIBUTE_VALUE;
 
   *src_rect_ = *RectImpl::From(value);
 }
@@ -658,6 +658,8 @@ void SpriteImpl::Put_Color(const scoped_refptr<Color>& value,
   if (CheckDisposed(exception_state))
     return;
 
+  CHECK_ATTRIBUTE_VALUE;
+
   *color_ = *ColorImpl::From(value);
 }
 
@@ -672,6 +674,8 @@ void SpriteImpl::Put_Tone(const scoped_refptr<Tone>& value,
                           ExceptionState& exception_state) {
   if (CheckDisposed(exception_state))
     return;
+
+  CHECK_ATTRIBUTE_VALUE;
 
   *tone_ = *ToneImpl::From(value);
 }

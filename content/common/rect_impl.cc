@@ -29,6 +29,12 @@ scoped_refptr<Rect> Rect::Copy(ExecutionContext* execution_context,
 scoped_refptr<Rect> Rect::Deserialize(ExecutionContext* execution_context,
                                       const std::string& data,
                                       ExceptionState& exception_state) {
+  if (data.size() < sizeof(int32_t) * 4) {
+    exception_state.ThrowError(ExceptionCode::CONTENT_ERROR,
+                               "Invalid data length, size: %d", data.size());
+    return nullptr;
+  }
+
   const int32_t* ptr = reinterpret_cast<const int32_t*>(data.data());
   RectImpl* impl =
       new RectImpl(base::Rect(*(ptr + 0), *(ptr + 1), *(ptr + 2), *(ptr + 3)));
@@ -92,6 +98,10 @@ base::Rect RectImpl::AsBaseRect() {
   tmp.width = std::max(0, tmp.width);
   tmp.height = std::max(0, tmp.height);
   return tmp;
+}
+
+SDL_Rect RectImpl::AsSDLRect() {
+  return SDL_Rect{rect_.x, rect_.y, rect_.width, rect_.height};
 }
 
 int32_t RectImpl::Get_X(ExceptionState& exception_state) {

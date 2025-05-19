@@ -364,10 +364,7 @@ SDL_Surface* CreateShadowSet(int32_t tilesize) {
 void GPUCreateTilemapInternal(renderer::RenderDevice* device,
                               Tilemap2Agent* agent) {
   agent->batch = renderer::QuadBatch::Make(**device);
-
-  agent->shader_binding =
-      device->GetPipelines()
-          ->tilemap2.CreateBinding<renderer::Binding_Tilemap2>();
+  agent->shader_binding = device->GetPipelines()->tilemap2.CreateBinding();
 
   Diligent::CreateUniformBuffer(
       **device, sizeof(renderer::Binding_Tilemap::Params), "tilemap.uniform",
@@ -581,8 +578,8 @@ scoped_refptr<Bitmap> TilemapBitmapImpl::Get(int32_t index,
 
   auto& bitmaps = tilemap_->bitmaps_;
   if (index < 0 || index >= static_cast<int32_t>(bitmaps.size())) {
-    exception_state.ThrowContentError(ExceptionCode::CONTENT_ERROR,
-                                      "Out range of bitmaps.");
+    exception_state.ThrowError(ExceptionCode::CONTENT_ERROR,
+                               "Out range of bitmaps.");
     return nullptr;
   }
 
@@ -597,8 +594,8 @@ void TilemapBitmapImpl::Put(int32_t index,
 
   auto& bitmaps = tilemap_->bitmaps_;
   if (index < 0 || index >= static_cast<int32_t>(bitmaps.size()))
-    return exception_state.ThrowContentError(ExceptionCode::CONTENT_ERROR,
-                                             "Out range of bitmaps.");
+    return exception_state.ThrowError(ExceptionCode::CONTENT_ERROR,
+                                      "Out range of bitmaps.");
 
   bitmaps[index].bitmap = CanvasImpl::FromBitmap(texture);
   bitmaps[index].observer = bitmaps[index].bitmap->AddCanvasObserver(
@@ -697,6 +694,8 @@ void Tilemap2Impl::Put_MapData(const scoped_refptr<Table>& value,
   if (CheckDisposed(exception_state))
     return;
 
+  CHECK_ATTRIBUTE_VALUE;
+
   map_data_ = TableImpl::From(value);
   map_data_observer_ = map_data_->AddObserver(base::BindRepeating(
       &Tilemap2Impl::MapDataModifyHandlerInternal, base::Unretained(this)));
@@ -715,6 +714,8 @@ void Tilemap2Impl::Put_FlashData(const scoped_refptr<Table>& value,
                                  ExceptionState& exception_state) {
   if (CheckDisposed(exception_state))
     return;
+
+  CHECK_ATTRIBUTE_VALUE;
 
   flash_data_ = TableImpl::From(value);
   flash_data_observer_ = flash_data_->AddObserver(base::BindRepeating(
@@ -743,6 +744,8 @@ void Tilemap2Impl::Put_Flags(const scoped_refptr<Table>& value,
                              ExceptionState& exception_state) {
   if (CheckDisposed(exception_state))
     return;
+
+  CHECK_ATTRIBUTE_VALUE;
 
   flags_ = TableImpl::From(value);
   flags_observer_ = flags_->AddObserver(base::BindRepeating(

@@ -92,7 +92,6 @@ size_t PHYS_RWopsWrite(void* userdata,
     return 0;
 
   PHYSFS_sint64 result = PHYSFS_writeBytes(f, buffer, size);
-
   return (result != -1) ? result : 0;
 }
 
@@ -209,9 +208,19 @@ IOService::~IOService() {
     LOG(INFO) << "[IOService] Failed to unload Physfs.";
 }
 
-void IOService::AddLoadPath(const std::string& path) {
-  if (!PHYSFS_mount(path.c_str(), nullptr, 1))
-    LOG(INFO) << "[IOService] Failed to add path: " << path;
+bool IOService::SetWritePath(const std::string& path) {
+  // Setup write output path
+  return !!PHYSFS_setWriteDir(path.c_str());
+}
+
+int32_t IOService::AddLoadPath(const std::string& new_path,
+                               const std::string& mount_point,
+                               bool append) {
+  return PHYSFS_mount(new_path.c_str(), mount_point.c_str(), append);
+}
+
+int32_t IOService::RemoveLoadPath(const std::string& old_path) {
+  return PHYSFS_unmount(old_path.c_str());
 }
 
 bool IOService::Exists(const std::string& filename) {
@@ -233,6 +242,10 @@ std::vector<std::string> IOService::EnumDir(const std::string& dir) {
       &files);
 
   return files;
+}
+
+std::string IOService::GetLastError() {
+  return PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
 }
 
 void IOService::OpenRead(const std::string& file_path,
@@ -282,6 +295,23 @@ void IOService::OpenRead(const std::string& file_path,
 SDL_IOStream* IOService::OpenReadRaw(const std::string& filename,
                                      IOState* io_state) {
   PHYSFS_File* file = PHYSFS_openRead(filename.c_str());
+  if (!file) {
+    if (io_state) {
+      io_state->error_count++;
+      io_state->error_message =
+          std::string(PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())) + ": " +
+          filename;
+    }
+
+    return nullptr;
+  }
+
+  return WrapperRWops(file);
+}
+
+SDL_IOStream* IOService::OpenWrite(const std::string& filename,
+                                   IOState* io_state) {
+  PHYSFS_File* file = PHYSFS_openWrite(filename.c_str());
   if (!file) {
     if (io_state) {
       io_state->error_count++;

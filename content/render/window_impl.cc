@@ -14,8 +14,7 @@ void GPUCreateWindowInternal(renderer::RenderDevice* device,
                              WindowAgent* agent) {
   agent->background_batch = renderer::QuadBatch::Make(**device);
   agent->control_batch = renderer::QuadBatch::Make(**device);
-  agent->shader_binding =
-      device->GetPipelines()->base.CreateBinding<renderer::Binding_Base>();
+  agent->shader_binding = device->GetPipelines()->base.CreateBinding();
 }
 
 void GPUDestroyWindowInternal(WindowAgent* agent) {
@@ -508,7 +507,7 @@ WindowImpl::WindowImpl(RenderScreenImpl* screen,
                        SortKey()),
       control_node_(parent ? parent->GetDrawableController()
                            : screen->GetDrawableController(),
-                    SortKey(0, 2)),
+                    SortKey(2)),
       scale_(scale),
       viewport_(parent),
       cursor_rect_(new RectImpl(base::Rect())) {
@@ -549,13 +548,17 @@ void WindowImpl::Update(ExceptionState& exception_state) {
   if (pause_index_ >= 32)
     pause_index_ = 0;
 
-  cursor_opacity_ += cursor_fade_ ? -8 : 8;
-  if (cursor_opacity_ > 255) {
-    cursor_opacity_ = 255;
-    cursor_fade_ = true;
-  } else if (cursor_opacity_ < 128) {
+  if (active_) {
+    cursor_opacity_ += cursor_fade_ ? -8 : 8;
+    if (cursor_opacity_ > 255) {
+      cursor_opacity_ = 255;
+      cursor_fade_ = true;
+    } else if (cursor_opacity_ < 128) {
+      cursor_opacity_ = 128;
+      cursor_fade_ = false;
+    }
+  } else {
     cursor_opacity_ = 128;
-    cursor_fade_ = false;
   }
 }
 
@@ -633,6 +636,8 @@ void WindowImpl::Put_CursorRect(const scoped_refptr<Rect>& value,
                                 ExceptionState& exception_state) {
   if (CheckDisposed(exception_state))
     return;
+
+  CHECK_ATTRIBUTE_VALUE;
 
   *cursor_rect_ = *RectImpl::From(value);
 }

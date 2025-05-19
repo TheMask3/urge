@@ -89,9 +89,6 @@ class CanvasImpl : public base::LinkNode<CanvasImpl>,
   SDL_Surface* RequireMemorySurface();
   void InvalidateSurfaceCache();
 
-  // Update memory surface to GPU.
-  void UpdateVideoMemory();
-
   // Process queued pending commands.
   void SubmitQueuedCommands();
 
@@ -202,8 +199,7 @@ class CanvasImpl : public base::LinkNode<CanvasImpl>,
   scoped_refptr<Rect> TextSize(const std::string& str,
                                ExceptionState& exception_state) override;
 
-  void SavePNG(const std::string& filename,
-               ExceptionState& exception_state) override;
+  scoped_refptr<Surface> GetSurface(ExceptionState& exception_state) override;
 
   URGE_DECLARE_OVERRIDE_ATTRIBUTE(Font, scoped_refptr<Font>);
 
@@ -336,6 +332,7 @@ class CanvasImpl : public base::LinkNode<CanvasImpl>,
 
   base::RepeatingClosureList observers_;
   scoped_refptr<FontImpl> font_;
+  DisposableCollection* parent_;
 };
 
 }  // namespace content

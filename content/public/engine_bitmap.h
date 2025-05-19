@@ -11,7 +11,9 @@
 #include "content/context/execution_context.h"
 #include "content/public/engine_color.h"
 #include "content/public/engine_font.h"
+#include "content/public/engine_iostream.h"
 #include "content/public/engine_rect.h"
+#include "content/public/engine_surface.h"
 
 namespace content {
 
@@ -38,6 +40,17 @@ class URGE_RUNTIME_API Bitmap : public base::RefCounted<Bitmap> {
   static scoped_refptr<Bitmap> Copy(ExecutionContext* execution_context,
                                     scoped_refptr<Bitmap> other,
                                     ExceptionState& exception_state);
+
+  /*--urge(name:from_surface)--*/
+  static scoped_refptr<Bitmap> FromSurface(ExecutionContext* execution_context,
+                                           scoped_refptr<Surface> surface,
+                                           ExceptionState& exception_state);
+
+  /*--urge(name:from_stream)--*/
+  static scoped_refptr<Bitmap> FromStream(ExecutionContext* execution_context,
+                                          scoped_refptr<IOStream> stream,
+                                          const std::string& extname,
+                                          ExceptionState& exception_state);
 
   /*--urge(serializable)--*/
   URGE_EXPORT_SERIALIZABLE(Bitmap);
@@ -187,9 +200,9 @@ class URGE_RUNTIME_API Bitmap : public base::RefCounted<Bitmap> {
   virtual scoped_refptr<Rect> TextSize(const std::string& str,
                                        ExceptionState& exception_state) = 0;
 
-  /*--urge(name:save_png)--*/
-  virtual void SavePNG(const std::string& filename,
-                       ExceptionState& exception_state) = 0;
+  /*--urge(name:get_surface)--*/
+  virtual scoped_refptr<Surface> GetSurface(
+      ExceptionState& exception_state) = 0;
 
   /*--urge(name:font)--*/
   URGE_EXPORT_ATTRIBUTE(Font, scoped_refptr<Font>);

@@ -6,9 +6,9 @@
 
 namespace content {
 
-Disposable::Disposable(DisposableCollection* parent)
-    : parent_(parent), disposed_(0) {
-  parent_->AddDisposable(this);
+Disposable::Disposable(DisposableCollection* parent) : disposed_(0) {
+  if (parent)
+    parent->AddDisposable(this);
 }
 
 Disposable::~Disposable() {
@@ -28,9 +28,10 @@ bool Disposable::IsDisposed(ExceptionState& exception_state) {
 
 bool Disposable::CheckDisposed(ExceptionState& exception_state) {
   if (disposed_)
-    exception_state.ThrowContentError(
-        ExceptionCode::CONTENT_ERROR,
-        "disposed object: " + DisposedObjectName());
+    exception_state.ThrowError(ExceptionCode::CONTENT_ERROR,
+                               "Disposed object: %s",
+                               DisposedObjectName().c_str());
+
   return disposed_;
 }
 

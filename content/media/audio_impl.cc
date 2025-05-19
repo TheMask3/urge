@@ -128,11 +128,14 @@ SoLoud::result soloud_sdlbackend_init(SoLoud::Soloud* aSoloud,
 
 }  // namespace
 
-AudioImpl::AudioImpl(filesystem::IOService* io_service,
+AudioImpl::AudioImpl(ContentProfile* profile,
+                     filesystem::IOService* io_service,
                      I18NProfile* i18n_profile)
-    : io_service_(io_service), i18n_profile_(i18n_profile) {
-  audio_runner_ = base::ThreadWorker::Create();
+    : io_service_(io_service), i18n_profile_(i18n_profile), output_device_(0) {
+  if (profile->disable_audio)
+    return;
 
+  audio_runner_ = base::ThreadWorker::Create();
   base::ThreadWorker::PostTask(
       audio_runner_.get(), base::BindOnce(&AudioImpl::InitAudioDeviceInternal,
                                           base::Unretained(this)));
@@ -331,7 +334,7 @@ void AudioImpl::InitAudioDeviceInternal() {
 
   if (!output_device_) {
     LOG(INFO) << "[Content] Failed to initialize audio device, audio module "
-                 "will be disabled";
+                 "will be disabled.";
     return;
   }
 

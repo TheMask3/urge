@@ -15,9 +15,7 @@ void GPUCreateWindowInternal(renderer::RenderDevice* device,
                              Window2Agent* agent) {
   agent->background_batch = renderer::QuadBatch::Make(**device);
   agent->controls_batch = renderer::QuadBatch::Make(**device);
-
-  agent->shader_binding =
-      device->GetPipelines()->base.CreateBinding<renderer::Binding_Base>();
+  agent->shader_binding = device->GetPipelines()->base.CreateBinding();
 
   Diligent::CreateUniformBuffer(
       **device, sizeof(renderer::Binding_Flat::Params), "window2.uniform",
@@ -123,7 +121,6 @@ void GPUCompositeWindowQuadsInternal(renderer::RenderDevice* device,
         renderer::Quad::SetTexCoordRect(quad_ptr, background1_src,
                                         windowskin->size);
         renderer::Quad::SetColor(quad_ptr, base::Vec4(back_opacity_norm));
-        background_draw_count++;
         quad_ptr++;
 
         int32_t tiles_count = BuildTiles(background2_src, background_dest,
@@ -209,6 +206,8 @@ void GPUCompositeWindowQuadsInternal(renderer::RenderDevice* device,
         auto& pipeline_set_tone = device->GetPipelines()->viewport;
         auto* pipeline_tone =
             pipeline_set_tone.GetPipeline(renderer::BlendType::NORMAL);
+        auto* pipeline_tone_alpha =
+            pipeline_set_tone.GetPipeline(renderer::BlendType::KEEP_ALPHA);
         auto& pipeline_set_base = device->GetPipelines()->base;
         auto* pipeline_base =
             pipeline_set_base.GetPipeline(renderer::BlendType::NORMAL);
@@ -223,21 +222,14 @@ void GPUCompositeWindowQuadsInternal(renderer::RenderDevice* device,
             render_target_view, clear_color,
             Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-        Diligent::Rect render_scissor;
-        render_scissor.right = bound.width;
-        render_scissor.bottom = bound.height;
-        context->SetScissorRects(1, &render_scissor, 1,
-                                 render_scissor.bottom + render_scissor.top);
-
+        device->Scissor()->Apply(bound.Size());
         device->GetQuadIndex()->Allocate(quads.size() + 20);
 
         // Create binding
         std::unique_ptr<renderer::Binding_Flat> flat_binding =
-            device->GetPipelines()
-                ->viewport.CreateBinding<renderer::Binding_Flat>();
+            device->GetPipelines()->viewport.CreateBinding();
         std::unique_ptr<renderer::Binding_Base> base_binding =
-            device->GetPipelines()
-                ->base.CreateBinding<renderer::Binding_Base>();
+            device->GetPipelines()->base.CreateBinding();
 
         // Setup uniform params
         flat_binding->u_transform->Set(agent->background_world);
@@ -262,11 +254,26 @@ void GPUCompositeWindowQuadsInternal(renderer::RenderDevice* device,
             **flat_binding,
             Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-        // Execute render command
+        // Stretch Layer
+        {
+          Diligent::DrawIndexedAttribs draw_indexed_attribs;
+          draw_indexed_attribs.NumIndices = 6;
+          draw_indexed_attribs.IndexType = device->GetQuadIndex()->format();
+          context->DrawIndexed(draw_indexed_attribs);
+        }
+
+        // Apply pipeline state
+        context->SetPipelineState(pipeline_tone_alpha);
+        context->CommitShaderResources(
+            **flat_binding,
+            Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+        // Tiled Layer
         {
           Diligent::DrawIndexedAttribs draw_indexed_attribs;
           draw_indexed_attribs.NumIndices = background_draw_count * 6;
           draw_indexed_attribs.IndexType = device->GetQuadIndex()->format();
+          draw_indexed_attribs.FirstIndexLocation = 6;
           context->DrawIndexed(draw_indexed_attribs);
         }
 
@@ -276,8 +283,9 @@ void GPUCompositeWindowQuadsInternal(renderer::RenderDevice* device,
             **base_binding,
             Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-        // Execute render command
+        // Frames and Corners
         {
+          background_draw_count++;
           Diligent::DrawIndexedAttribs draw_indexed_attribs;
           draw_indexed_attribs.NumIndices =
               (quads.size() - background_draw_count) * 6;
@@ -769,8 +777,10 @@ void Window2Impl::Put_Windowskin(const scoped_refptr<Bitmap>& value,
     return;
 
   windowskin_ = CanvasImpl::FromBitmap(value);
-  windowskin_->AddCanvasObserver(base::BindRepeating(
-      &Window2Impl::BackgroundTextureObserverInternal, base::Unretained(this)));
+  if (windowskin_)
+    windowskin_->AddCanvasObserver(
+        base::BindRepeating(&Window2Impl::BackgroundTextureObserverInternal,
+                            base::Unretained(this)));
   background_dirty_ = true;
 }
 
@@ -799,6 +809,8 @@ void Window2Impl::Put_CursorRect(const scoped_refptr<Rect>& value,
                                  ExceptionState& exception_state) {
   if (CheckDisposed(exception_state))
     return;
+
+  CHECK_ATTRIBUTE_VALUE;
 
   *cursor_rect_ = *RectImpl::From(value);
 }
@@ -980,6 +992,7 @@ void Window2Impl::Put_Padding(const int32_t& value,
     return;
 
   padding_ = value;
+  padding_bottom_ = padding_;
 }
 
 int32_t Window2Impl::Get_PaddingBottom(ExceptionState& exception_state) {
@@ -1069,6 +1082,8 @@ void Window2Impl::Put_Tone(const scoped_refptr<Tone>& value,
                            ExceptionState& exception_state) {
   if (CheckDisposed(exception_state))
     return;
+
+  CHECK_ATTRIBUTE_VALUE;
 
   *tone_ = *ToneImpl::From(value);
   background_dirty_ = true;

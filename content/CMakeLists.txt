@@ -14,6 +14,8 @@ set(ENGINE_CONTENT_SRC
   canvas/canvas_scheduler.h
   canvas/font_impl.cc
   canvas/font_impl.h
+  canvas/surface_impl.cc
+  canvas/surface_impl.h
   common/color_impl.cc
   common/color_impl.h
   common/rect_impl.cc
@@ -22,12 +24,16 @@ set(ENGINE_CONTENT_SRC
   common/table_impl.h
   common/tone_impl.cc
   common/tone_impl.h
+  components/animation_impl.cc
+  components/animation_impl.h
   components/display_impl.cc
   components/display_impl.h
   components/disposable.cc
   components/disposable.h
   components/font_context.cc
   components/font_context.h
+  components/iostream_impl.cc
+  components/iostream_impl.h
   components/misc_system.cc
   components/misc_system.h
   components/sprite_batch.cc
@@ -47,10 +53,14 @@ set(ENGINE_CONTENT_SRC
   input/mouse_controller.h
   input/mouse_event.cc
   input/mouse_event.h
+  input/text_input.cc
+  input/text_input.h
   input/touch_event.cc
   input/touch_event.h
   media/audio_impl.cc
   media/audio_impl.h
+  media/videodecoder_impl.cc
+  media/videodecoder_impl.h
   profile/command_ids.h
   profile/content_profile.cc
   profile/content_profile.h
@@ -95,7 +105,8 @@ execute_process(
 )
 
 add_library(engine_content STATIC ${ENGINE_CONTENT_SRC})
-target_link_libraries(engine_content PUBLIC
+target_link_libraries(engine_content
+ PUBLIC
   engine_base
   engine_ui
   engine_renderer
@@ -104,6 +115,7 @@ target_link_libraries(engine_content PUBLIC
   sdl_image_loader
   sdl_ttf_render
   ocornut_imgui
+  av1player
   soloud
 )
 
