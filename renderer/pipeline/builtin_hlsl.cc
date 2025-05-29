@@ -577,11 +577,6 @@ cbuffer WorldMatrixBuffer {
 struct Tilemap2Params {
   float4 OffsetAndTexSize;
   float4 AnimationOffsetAndTileSize;
-
-  float2 Offset;
-  float2 TexSize;
-  float2 AnimationOffset;  
-  float TileSize;
 };
 
 cbuffer Tilemap2UniformBuffer {
@@ -840,7 +835,7 @@ struct PSOutput {
   float4 Color : SV_TARGET;
 };
 
-static const float3 kYUVOffset = float3(0, -0.501960814, -0.501960814);
+static const float3 kYUVOffset = float3(0.0, -0.501960814, -0.501960814);
 static const float3x3 kYUVMatrix = float3x3(1,       1,        1,
                                             0,      -0.3441,   1.772,
                                             1.402,  -0.7141,   0);
@@ -851,7 +846,12 @@ void PSMain(in PSInput PSIn, out PSOutput PSOut) {
   yuv.y = u_TextureU.Sample(u_TextureU_sampler, PSIn.UV).r;
   yuv.z = u_TextureV.Sample(u_TextureV_sampler, PSIn.UV).r;
   yuv += kYUVOffset;
-  float3 rgb = mul(kYUVMatrix, yuv);
+  float3 rgb =
+#if defined(GLSL)
+    mul(kYUVMatrix, yuv);
+#else
+    mul(yuv, kYUVMatrix);
+#endif
   PSOut.Color = float4(rgb.x, rgb.y, rgb.z, 1.0);
 }
 

@@ -10,7 +10,7 @@
 
 #include "base/memory/ref_counted.h"
 #include "components/filesystem/io_service.h"
-#include "content/components/disposable.h"
+#include "content/context/disposable.h"
 #include "content/public/engine_videodecoder.h"
 #include "content/screen/renderscreen_impl.h"
 
@@ -57,7 +57,6 @@ class VideoDecoderImpl : public VideoDecoder,
   VideoDecoderAgent* agent_;
 
   std::unique_ptr<uvpx::Player> player_;
-  filesystem::IOService* io_service_;
   uint64_t last_ticks_;
   int64_t counter_freq_;
   float frame_delta_;

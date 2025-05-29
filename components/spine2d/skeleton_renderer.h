@@ -9,6 +9,7 @@
 
 #include "spine/spine.h"
 
+#include "base/worker/thread_worker.h"
 #include "components/filesystem/io_service.h"
 #include "renderer/device/render_device.h"
 #include "renderer/pipeline/render_pipeline.h"
@@ -21,9 +22,15 @@ using SpineVertexBatch = renderer::BatchBuffer<renderer::SpineVertex,
                                                Diligent::CPU_ACCESS_NONE,
                                                Diligent::USAGE_DEFAULT>;
 
+struct SpineRendererAgent {
+  std::unique_ptr<SpineVertexBatch> vertex_batch;
+  std::unique_ptr<renderer::Binding_Base> shader_binding;
+};
+
 class DiligentTextureLoader : public TextureLoader {
  public:
   DiligentTextureLoader(renderer::RenderDevice* device,
+                        base::ThreadWorker* worker,
                         filesystem::IOService* io_service);
   ~DiligentTextureLoader() override;
 
@@ -35,6 +42,7 @@ class DiligentTextureLoader : public TextureLoader {
 
  private:
   renderer::RenderDevice* device_;
+  base::ThreadWorker* worker_;
   filesystem::IOService* io_service_;
 };
 
@@ -47,31 +55,22 @@ class DiligentRenderer {
 
   static std::unique_ptr<DiligentRenderer> Create(
       renderer::RenderDevice* device,
-      SkeletonData* skeleton_data,
-      AnimationStateData* animation_state_data);
+      base::ThreadWorker* worker);
 
-  void Update(Diligent::IDeviceContext* context, float delta, Physics physics);
-  void Render(Diligent::IDeviceContext* context,
-              Diligent::IBuffer* world_buffer,
+  void Update(renderer::RenderContext* context, spine::Skeleton* skeleton);
+  void Render(renderer::RenderContext* context,
+              Diligent::IBuffer** world_buffer,
               bool premultiplied_alpha);
 
  private:
-  DiligentRenderer(renderer::RenderDevice* device,
-                   SkeletonData* skeleton_data,
-                   AnimationStateData* animation_state_data);
+  DiligentRenderer(renderer::RenderDevice* device, base::ThreadWorker* worker);
 
   renderer::RenderDevice* device_;
+  base::ThreadWorker* worker_;
+  SpineRendererAgent* agent_;
   std::vector<renderer::SpineVertex> vertex_cache_;
-  std::unique_ptr<SpineVertexBatch> vertex_batch_;
-  Diligent::RefCntAutoPtr<Diligent::IBuffer> index_buffer_;
-  std::unique_ptr<renderer::Binding_Base> shader_binding_;
-
-  std::unique_ptr<Skeleton> skeleton_;
-  std::unique_ptr<AnimationState> animation_state_;
-
   std::unique_ptr<SkeletonRenderer> skeleton_renderer_;
   RenderCommand* pending_commands_;
-  bool owns_animation_state_data_;
 };
 
 }  // namespace spine

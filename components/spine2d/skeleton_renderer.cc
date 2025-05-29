@@ -14,6 +14,10 @@ namespace spine {
 
 namespace {
 
+struct SpineTextureAgent {
+  RRefPtr<Diligent::ITexture> texture;
+};
+
 Diligent::TEXTURE_ADDRESS_MODE TexAddressWrap(TextureWrap wrap) {
   switch (wrap) {
     default:
@@ -53,11 +57,113 @@ renderer::BlendType RenderBlendTypeWrap(BlendMode mode,
   }
 }
 
+void GPUCreateTextureInternal(renderer::RenderDevice* device,
+                              SDL_Surface* atlas_surface,
+                              SpineTextureAgent* agent,
+                              TEXTURE_FILTER_ENUM min_filter,
+                              TEXTURE_FILTER_ENUM mag_filter,
+                              TextureWrap uwrap,
+                              TextureWrap vwrap) {
+  if (atlas_surface->format != SDL_PIXELFORMAT_ABGR8888) {
+    SDL_Surface* conv =
+        SDL_ConvertSurface(atlas_surface, SDL_PIXELFORMAT_ABGR8888);
+    SDL_DestroySurface(atlas_surface);
+    atlas_surface = conv;
+  }
+
+  RRefPtr<Diligent::ITexture> texture;
+  renderer::CreateTexture2D(**device, &texture, "spine.atlas", atlas_surface,
+                            Diligent::USAGE_DEFAULT,
+                            Diligent::BIND_SHADER_RESOURCE);
+
+  Diligent::SamplerDesc sampler_desc;
+  sampler_desc.Name = "spine2d.atlas.sampler";
+  sampler_desc.MinFilter = TexFilterWrap(min_filter);
+  sampler_desc.MagFilter = TexFilterWrap(mag_filter);
+  sampler_desc.AddressU = TexAddressWrap(uwrap);
+  sampler_desc.AddressV = TexAddressWrap(vwrap);
+
+  RRefPtr<Diligent::ISampler> sampler;
+  (*device)->CreateSampler(sampler_desc, &sampler);
+
+  auto* atlas_view =
+      texture->GetDefaultView(Diligent::TEXTURE_VIEW_SHADER_RESOURCE);
+  atlas_view->SetSampler(sampler);
+
+  SDL_DestroySurface(atlas_surface);
+
+  agent->texture = texture;
+}
+
+void GPUDestroyTextureInternal(SpineTextureAgent* agent) {
+  delete agent;
+}
+
+void GPUCreateRendererDataInternal(renderer::RenderDevice* device,
+                                   SpineRendererAgent* agent) {
+  agent->vertex_batch = SpineVertexBatch::Make(**device);
+  agent->shader_binding = device->GetPipelines()->spine2d.CreateBinding();
+}
+
+void GPUDestroyRendererDataInternal(SpineRendererAgent* agent) {
+  delete agent;
+}
+
+void GPUUploadVerticesDataInternal(
+    renderer::RenderContext* context,
+    SpineRendererAgent* agent,
+    std::vector<renderer::SpineVertex> vertices_data) {
+  agent->vertex_batch->QueueWrite(**context, vertices_data.data(),
+                                  vertices_data.size());
+}
+
+void GPURenderSkeletonCommandsInternal(renderer::RenderDevice* device,
+                                       renderer::RenderContext* context,
+                                       SpineRendererAgent* agent,
+                                       SpineTextureAgent* atlas,
+                                       BlendMode blend_mode,
+                                       bool premultiplied_alpha,
+                                       Diligent::IBuffer** world_buffer,
+                                       uint32_t num_vertices,
+                                       uint32_t vertices_offset) {
+  auto& pipeline_set = device->GetPipelines()->spine2d;
+  auto* pipeline = pipeline_set.GetPipeline(
+      RenderBlendTypeWrap(blend_mode, premultiplied_alpha));
+
+  // Setup uniform params
+  agent->shader_binding->u_transform->Set(*world_buffer);
+  agent->shader_binding->u_texture->Set(
+      atlas->texture->GetDefaultView(Diligent::TEXTURE_VIEW_SHADER_RESOURCE));
+
+  // Apply pipeline state
+  (*context)->SetPipelineState(pipeline);
+  (*context)->CommitShaderResources(
+      **agent->shader_binding,
+      Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+  // Apply vertex index
+  Diligent::IBuffer* const vertex_buffer = **agent->vertex_batch;
+  (*context)->SetVertexBuffers(
+      0, 1, &vertex_buffer, nullptr,
+      Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+  // Execute render command
+  Diligent::DrawAttribs draw_indexed_attribs;
+  draw_indexed_attribs.NumVertices = num_vertices;
+  draw_indexed_attribs.StartVertexLocation = vertices_offset;
+  (*context)->Draw(draw_indexed_attribs);
+}
+
 }  // namespace
 
+SpineExtension* getDefaultExtension() {
+  return new DefaultSpineExtension();
+}
+
 DiligentTextureLoader::DiligentTextureLoader(renderer::RenderDevice* device,
+                                             base::ThreadWorker* worker,
                                              filesystem::IOService* io_service)
-    : device_(device), io_service_(io_service) {}
+    : device_(device), worker_(worker), io_service_(io_service) {}
 
 DiligentTextureLoader::~DiligentTextureLoader() = default;
 
@@ -85,163 +191,103 @@ void DiligentTextureLoader::load(AtlasPage& page, const String& path) {
     return;
   }
 
-  if (atlas_surface->format != SDL_PIXELFORMAT_ABGR8888) {
-    SDL_Surface* conv =
-        SDL_ConvertSurface(atlas_surface, SDL_PIXELFORMAT_ABGR8888);
-    SDL_DestroySurface(atlas_surface);
-    atlas_surface = conv;
-  }
-
-  RRefPtr<Diligent::ITexture> texture;
-  renderer::CreateTexture2D(
-      **device_, &texture, "SpineAtlas:" + std::string(path.buffer()),
-      atlas_surface, Diligent::USAGE_DEFAULT, Diligent::BIND_SHADER_RESOURCE);
-
-  Diligent::SamplerDesc sampler_desc;
-  sampler_desc.Name = "spine2d.atlas.sampler";
-  sampler_desc.MinFilter = TexFilterWrap(page.minFilter);
-  sampler_desc.MagFilter = TexFilterWrap(page.magFilter);
-  sampler_desc.AddressU = TexAddressWrap(page.uWrap);
-  sampler_desc.AddressV = TexAddressWrap(page.vWrap);
-
-  RRefPtr<Diligent::ISampler> sampler;
-  (*device_)->CreateSampler(sampler_desc, &sampler);
-
-  auto* atlas_view =
-      texture->GetDefaultView(Diligent::TEXTURE_VIEW_SHADER_RESOURCE);
-  atlas_view->SetSampler(sampler);
-
+  auto* agent = new SpineTextureAgent;
   page.width = atlas_surface->w;
   page.height = atlas_surface->h;
-  page.texture = texture.Detach();
+  page.texture = agent;
+
+  base::ThreadWorker::PostTask(
+      worker_,
+      base::BindOnce(&GPUCreateTextureInternal, device_, atlas_surface, agent,
+                     page.minFilter, page.magFilter, page.uWrap, page.vWrap));
 }
 
 void DiligentTextureLoader::unload(void* texture) {
-  RRefPtr<Diligent::ITexture> render_texture;
-  render_texture.Attach(static_cast<Diligent::ITexture*>(texture));
-  render_texture.Release();
+  base::ThreadWorker::PostTask(
+      worker_, base::BindOnce(&GPUDestroyTextureInternal,
+                              static_cast<SpineTextureAgent*>(texture)));
 }
 
 DiligentRenderer::DiligentRenderer(renderer::RenderDevice* device,
-                                   SkeletonData* skeleton_data,
-                                   AnimationStateData* animation_state_data)
+                                   base::ThreadWorker* worker)
     : device_(device),
-      vertex_batch_(SpineVertexBatch::Make(**device)),
-      shader_binding_(device->GetPipelines()
-                          ->spine2d.CreateBinding<renderer::Binding_Base>()),
-      skeleton_(std::make_unique<Skeleton>(skeleton_data)),
-      animation_state_(std::make_unique<AnimationState>(
-          animation_state_data ? animation_state_data
-                               : new AnimationStateData(skeleton_data))),
-      skeleton_renderer_(std::unique_ptr<SkeletonRenderer>()),
-      pending_commands_(nullptr),
-      owns_animation_state_data_(!animation_state_data) {}
+      worker_(worker),
+      agent_(new SpineRendererAgent),
+      skeleton_renderer_(std::make_unique<SkeletonRenderer>()),
+      pending_commands_(nullptr) {
+  base::ThreadWorker::PostTask(
+      worker_, base::BindOnce(&GPUCreateRendererDataInternal, device, agent_));
+}
 
 DiligentRenderer::~DiligentRenderer() {
-  if (owns_animation_state_data_)
-    delete animation_state_->getData();
+  base::ThreadWorker::PostTask(
+      worker_, base::BindOnce(&GPUDestroyRendererDataInternal, agent_));
 }
 
 std::unique_ptr<DiligentRenderer> DiligentRenderer::Create(
     renderer::RenderDevice* device,
-    SkeletonData* skeleton_data,
-    AnimationStateData* animation_state_data) {
+    base::ThreadWorker* worker) {
   return std::unique_ptr<DiligentRenderer>(
-      new DiligentRenderer(device, skeleton_data, animation_state_data));
+      new DiligentRenderer(device, worker));
 }
 
-void DiligentRenderer::Update(Diligent::IDeviceContext* context,
-                              float delta,
-                              Physics physics) {
-  animation_state_->update(delta);
-  animation_state_->apply(*skeleton_);
-  skeleton_->update(delta);
-  skeleton_->updateWorldTransform(physics);
-
-  pending_commands_ = skeleton_renderer_->render(*skeleton_);
+void DiligentRenderer::Update(renderer::RenderContext* context,
+                              spine::Skeleton* skeleton) {
+  vertex_cache_.clear();
+  pending_commands_ = skeleton_renderer_->render(*skeleton);
   RenderCommand* command = pending_commands_;
   while (command) {
     float* positions = command->positions;
     float* uvs = command->uvs;
     uint32_t* colors = command->colors;
     uint32_t* darkColors = command->darkColors;
-    uint16_t* indices = command->indices;
 
-    int32_t num_command_vertices = command->numVertices;
-    vertex_cache_.resize(num_command_vertices);
-    for (int32_t i = 0, j = 0; i < num_command_vertices; i++, j += 2) {
-      renderer::SpineVertex& vertex = vertex_cache_[i];
-      vertex.position.x = positions[j];
-      vertex.position.y = positions[j + 1];
-      vertex.texcoord.x = uvs[j];
-      vertex.texcoord.y = uvs[j + 1];
-      uint32_t color = colors[i];
+    // Vertex data
+    for (int32_t i = 0; i < command->numIndices; ++i) {
+      uint16_t index = command->indices[i];
+      uint16_t vertex_index = index << 1;
+
+      renderer::SpineVertex vertex;
+      vertex.position.x = positions[vertex_index];
+      vertex.position.y = positions[vertex_index + 1];
+      vertex.texcoord.x = uvs[vertex_index];
+      vertex.texcoord.y = uvs[vertex_index + 1];
+      uint32_t color = colors[vertex_index >> 1];
       vertex.light_color = (color & 0xFF00FF00) | ((color & 0x00FF0000) >> 16) |
                            ((color & 0x000000FF) << 16);
-      uint32_t darkColor = darkColors[i];
+      uint32_t darkColor = darkColors[vertex_index >> 1];
       vertex.dark_color = (darkColor & 0xFF00FF00) |
                           ((darkColor & 0x00FF0000) >> 16) |
                           ((darkColor & 0x000000FF) << 16);
+      vertex_cache_.push_back(vertex);
     }
-
-    int32_t num_command_indices = command->numIndices;
-    uint32_t index_buffer_size = num_command_indices * sizeof(uint16_t);
-    if (!index_buffer_ || index_buffer_->GetDesc().Size < index_buffer_size) {
-      Diligent::BufferDesc buffer_desc;
-      buffer_desc.Name = "spine2d.index.buffer";
-      buffer_desc.Usage = Diligent::USAGE_DEFAULT;
-      buffer_desc.BindFlags = Diligent::BIND_INDEX_BUFFER;
-      buffer_desc.Size = index_buffer_size;
-      index_buffer_.Release();
-      (*device_)->CreateBuffer(buffer_desc, nullptr, &index_buffer_);
-    }
-
-    vertex_batch_->QueueWrite(context, vertex_cache_.data(),
-                              vertex_cache_.size());
-    context->UpdateBuffer(index_buffer_, 0, index_buffer_size, indices,
-                          Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     command = command->next;
   }
+
+  // Upload data
+  base::ThreadWorker::PostTask(
+      worker_, base::BindOnce(&GPUUploadVerticesDataInternal, context, agent_,
+                              vertex_cache_));
 }
 
-void DiligentRenderer::Render(Diligent::IDeviceContext* context,
-                              Diligent::IBuffer* world_buffer,
+void DiligentRenderer::Render(renderer::RenderContext* context,
+                              Diligent::IBuffer** world_buffer,
                               bool premultiplied_alpha) {
+  uint32_t vertices_offset = 0;
   RenderCommand* command = pending_commands_;
   while (command) {
-    auto* texture = static_cast<Diligent::ITexture*>(command->texture);
-    auto* texture_view =
-        texture->GetDefaultView(Diligent::TEXTURE_VIEW_SHADER_RESOURCE);
+    auto* texture = static_cast<SpineTextureAgent*>(command->texture);
 
-    auto& pipeline_set = device_->GetPipelines()->spine2d;
-    auto* pipeline = pipeline_set.GetPipeline(
-        RenderBlendTypeWrap(command->blendMode, premultiplied_alpha));
-
-    // Setup uniform params
-    shader_binding_->u_transform->Set(world_buffer);
-    shader_binding_->u_texture->Set(texture_view);
-
-    // Apply pipeline state
-    context->SetPipelineState(pipeline);
-    context->CommitShaderResources(
-        **shader_binding_, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-
-    // Apply vertex index
-    Diligent::IBuffer* const vertex_buffer = **vertex_batch_;
-    context->SetVertexBuffers(
-        0, 1, &vertex_buffer, nullptr,
-        Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-    context->SetIndexBuffer(
-        index_buffer_, 0, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
-
-    // Execute render command
-    Diligent::DrawIndexedAttribs draw_indexed_attribs;
-    draw_indexed_attribs.NumIndices = command->numIndices;
-    draw_indexed_attribs.IndexType = Diligent::VT_UINT16;
-    context->DrawIndexed(draw_indexed_attribs);
+    // Raise render task
+    base::ThreadWorker::PostTask(
+        worker_,
+        base::BindOnce(&GPURenderSkeletonCommandsInternal, device_, context,
+                       agent_, texture, command->blendMode, premultiplied_alpha,
+                       world_buffer, command->numIndices, vertices_offset));
 
     // Step into next command
+    vertices_offset += command->numIndices;
     command = command->next;
   }
 }

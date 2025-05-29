@@ -10,13 +10,13 @@
 #include "base/worker/thread_worker.h"
 #include "components/fpslimiter/fpslimiter.h"
 #include "content/canvas/canvas_scheduler.h"
-#include "content/components/disposable.h"
-#include "content/components/font_context.h"
-#include "content/components/sprite_batch.h"
+#include "content/canvas/font_context.h"
+#include "content/context/disposable.h"
 #include "content/profile/content_profile.h"
 #include "content/profile/i18n_profile.h"
 #include "content/public/engine_graphics.h"
 #include "content/render/drawable_controller.h"
+#include "content/render/sprite_batch.h"
 #include "renderer/device/render_device.h"
 #include "renderer/layout/uniform_layout.h"
 
@@ -24,6 +24,8 @@ namespace content {
 
 struct RenderGraphicsAgent {
   std::unique_ptr<renderer::RenderDevice> device;
+  std::unique_ptr<renderer::RenderContext> context;
+
   std::unique_ptr<CanvasScheduler> canvas_scheduler;
   std::unique_ptr<SpriteBatch> sprite_batch;
 
@@ -95,6 +97,7 @@ class RenderScreenImpl : public Graphics, public DisposableCollection {
   base::Vec2i GetResolution() const { return resolution_; }
 
   renderer::RenderDevice* GetDevice() const { return agent_->device.get(); }
+  renderer::RenderContext* GetContext() const { return agent_->context.get(); }
   SpriteBatch* GetSpriteBatch() const { return agent_->sprite_batch.get(); }
   ScopedFontData* GetScopedFontContext() const { return scoped_font_; }
   CanvasScheduler* GetCanvasScheduler() const {
